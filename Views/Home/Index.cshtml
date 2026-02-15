@@ -1,0 +1,17 @@
+﻿@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="text-center mt-5">
+    <h1>Inventory Management System</h1>
+    <p class="lead">Welcome to my course project.</p>
+
+    @if (User.Identity.IsAuthenticated)
+    {
+        <p>You are logged in as @User.Identity.Name</p>
+    }
+    else
+    {
+        <p>Please login or register to continue.</p>
+    }
+</div>
