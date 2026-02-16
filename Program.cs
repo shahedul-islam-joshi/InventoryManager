@@ -7,38 +7,50 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // ==========================================
-// 1. DATABASE CONFIGURATION (PostgreSQL)
+// 1. DATABASE CONFIGURATION
 // ==========================================
+// We check for "DefaultConnection" first (Local), then "DATABASE_URL" (Render)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+                       ?? Environment.GetEnvironmentVariable("DATABASE_URL");
+
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException("Connection string not found.");
+}
+
+// Simple Parser: Converts postgres:// to Host= format for Npgsql
+if (connectionString.StartsWith("postgres://") || connectionString.StartsWith("postgresql://"))
+{
+    var uri = new Uri(connectionString);
+    var userInfo = uri.UserInfo.Split(':');
+    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SslMode=Require;Trust Server Certificate=true;";
+}
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 // ==========================================
-// 2. IDENTITY & SECURITY
+// 2. IDENTITY SETUP
 // ==========================================
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
-    options.Password.RequireDigit = false;
     options.Password.RequiredLength = 6;
+    options.Password.RequireDigit = false;
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
 })
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// ==========================================
-// 3. MVC & RAZOR PAGES
-// ==========================================
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
 // ==========================================
-// 4. MIDDLEWARE PIPELINE
+// 3. MIDDLEWARE
 // ==========================================
 if (!app.Environment.IsDevelopment())
 {
@@ -48,25 +60,20 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
 
 app.UseAuthentication();
-// Custom Middleware - Order matters! After Auth, before AuthZ
+// Custom Middleware - This blocks users before they can do anything else
 app.UseMiddleware<InventoryManager.Middleware.BlockedUserMiddleware>();
 app.UseAuthorization();
 
-// ==========================================
-// 5. ROUTING
-// ==========================================
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-
 app.MapRazorPages();
 
 // ==========================================
-// 6. AUTO-MIGRATE & SEED DATA (Optimized)
+// 4. AUTO-MIGRATE & SEED ADMIN
 // ==========================================
 using (var scope = app.Services.CreateScope())
 {
@@ -74,22 +81,20 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
+
+        // This line creates the tables in your Render database automatically
+        await context.Database.MigrateAsync();
+
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
 
-        // 1. Apply any pending migrations
-        if (context.Database.GetPendingMigrations().Any())
-        {
-            await context.Database.MigrateAsync();
-        }
-
-        // 2. Seed Admin Role
+        // Create Admin Role
         if (!await roleManager.RoleExistsAsync("Admin"))
         {
             await roleManager.CreateAsync(new IdentityRole("Admin"));
         }
 
-        // 3. Seed Default Admin User
+        // Create Admin User
         var adminEmail = "admin@admin.com";
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
 
@@ -99,7 +104,8 @@ using (var scope = app.Services.CreateScope())
             {
                 UserName = adminEmail,
                 Email = adminEmail,
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                IsBlocked = false // Custom property from your ApplicationUser class
             };
 
             var result = await userManager.CreateAsync(user, "admin123");
@@ -112,7 +118,7 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred during migration or seeding.");
+        logger.LogError(ex, "Database Migration/Seeding failed.");
     }
 }
 

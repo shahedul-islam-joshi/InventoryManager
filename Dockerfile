@@ -1,30 +1,44 @@
-# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
-# This stage is used when running from VS in fast mode (Default for Debug configuration)
+# ==========================================
+# 1. BASE RUNTIME STAGE
+# ==========================================
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
-USER $APP_UID
 WORKDIR /app
+# Render uses port 8080 by default for ASP.NET Core
 EXPOSE 8080
 EXPOSE 8081
 
-
-# This stage is used to build the service project
+# ==========================================
+# 2. BUILD STAGE
+# ==========================================
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["InventoryManager.csproj", "."]
-RUN dotnet restore "./InventoryManager.csproj"
-COPY . .
-WORKDIR "/src/."
-RUN dotnet build "./InventoryManager.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-# This stage is used to publish the service project to be copied to the final stage
+# Copy the project file and restore dependencies
+# This is done separately to take advantage of Docker caching
+COPY ["InventoryManager.csproj", "./"]
+RUN dotnet restore "InventoryManager.csproj"
+
+# Copy the rest of the application code
+COPY . .
+
+# Build the application
+RUN dotnet build "InventoryManager.csproj" -c $BUILD_CONFIGURATION -o /app/build
+
+# ==========================================
+# 3. PUBLISH STAGE
+# ==========================================
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./InventoryManager.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "InventoryManager.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
+# ==========================================
+# 4. FINAL RUNTIME STAGE
+# ==========================================
 FROM base AS final
 WORKDIR /app
+# Copy the published output from the publish stage
 COPY --from=publish /app/publish .
+
+# Set the entry point to run your DLL
 ENTRYPOINT ["dotnet", "InventoryManager.dll"]

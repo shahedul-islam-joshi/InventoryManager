@@ -14,17 +14,27 @@ namespace InventoryManager.Middleware
 
         public async Task InvokeAsync(HttpContext context, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
         {
+            // 1. Check if the user is logged in
             if (context.User.Identity?.IsAuthenticated == true)
             {
-                var user = await userManager.GetUserAsync(context.User);
-                if (user != null && user.IsBlocked)
+                // 2. SAFETY: Don't run this logic if they are already trying to Logout or are on the Login page
+                // This prevents infinite redirect loops.
+                var path = context.Request.Path.Value?.ToLower();
+                if (path != null && !path.Contains("/identity/account/logout") && !path.Contains("/identity/account/login"))
                 {
-                    await signInManager.SignOutAsync();
-                    context.Response.Redirect("/Identity/Account/Login?error=blocked");
-                    return;
+                    var user = await userManager.GetUserAsync(context.User);
+
+                    if (user != null && user.IsBlocked)
+                    {
+                        // 3. Log them out and send them away
+                        await signInManager.SignOutAsync();
+                        context.Response.Redirect("/Identity/Account/Login?error=blocked");
+                        return; // Stop the request here
+                    }
                 }
             }
 
+            // Continue to the next piece of middleware (Authorization, etc.)
             await _next(context);
         }
     }
