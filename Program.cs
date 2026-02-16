@@ -7,9 +7,9 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // ==========================================
-// 1. DATABASE CONFIGURATION
+// 1. DATABASE CONFIGURATION (Enhanced Parser)
 // ==========================================
-// We check for "DefaultConnection" first (Local), then "DATABASE_URL" (Render)
+// We check for "DefaultConnection" (Local) or "DATABASE_URL" (Render)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
                        ?? Environment.GetEnvironmentVariable("DATABASE_URL");
 
@@ -18,12 +18,22 @@ if (string.IsNullOrEmpty(connectionString))
     throw new InvalidOperationException("Connection string not found.");
 }
 
-// Simple Parser: Converts postgres:// to Host= format for Npgsql
+// Convert postgres:// URI to the Key=Value format Npgsql requires
 if (connectionString.StartsWith("postgres://") || connectionString.StartsWith("postgresql://"))
 {
     var uri = new Uri(connectionString);
     var userInfo = uri.UserInfo.Split(':');
-    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SslMode=Require;Trust Server Certificate=true;";
+
+    // Fix for the 'Port -1' error: If port is missing in URI, use default 5432
+    var port = uri.Port <= 0 ? 5432 : uri.Port;
+
+    connectionString = $"Host={uri.Host};" +
+                       $"Port={port};" +
+                       $"Database={uri.AbsolutePath.TrimStart('/')};" +
+                       $"Username={userInfo[0]};" +
+                       $"Password={userInfo[1]};" +
+                       $"SslMode=Require;" +
+                       $"Trust Server Certificate=true;";
 }
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -50,7 +60,7 @@ builder.Services.AddRazorPages();
 var app = builder.Build();
 
 // ==========================================
-// 3. MIDDLEWARE
+// 3. MIDDLEWARE PIPELINE
 // ==========================================
 if (!app.Environment.IsDevelopment())
 {
@@ -63,7 +73,7 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthentication();
-// Custom Middleware - This blocks users before they can do anything else
+// Order is critical: Custom middleware must be after Auth and before AuthZ
 app.UseMiddleware<InventoryManager.Middleware.BlockedUserMiddleware>();
 app.UseAuthorization();
 
@@ -73,7 +83,7 @@ app.MapControllerRoute(
 app.MapRazorPages();
 
 // ==========================================
-// 4. AUTO-MIGRATE & SEED ADMIN
+// 4. AUTO-MIGRATE & SEED DATA
 // ==========================================
 using (var scope = app.Services.CreateScope())
 {
@@ -88,13 +98,13 @@ using (var scope = app.Services.CreateScope())
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
 
-        // Create Admin Role
+        // Seed Admin Role
         if (!await roleManager.RoleExistsAsync("Admin"))
         {
             await roleManager.CreateAsync(new IdentityRole("Admin"));
         }
 
-        // Create Admin User
+        // Seed Default Admin User
         var adminEmail = "admin@admin.com";
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
 
@@ -105,7 +115,7 @@ using (var scope = app.Services.CreateScope())
                 UserName = adminEmail,
                 Email = adminEmail,
                 EmailConfirmed = true,
-                IsBlocked = false // Custom property from your ApplicationUser class
+                IsBlocked = false
             };
 
             var result = await userManager.CreateAsync(user, "admin123");
@@ -118,7 +128,7 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Database Migration/Seeding failed.");
+        logger.LogError(ex, "An error occurred during migration or seeding.");
     }
 }
 
