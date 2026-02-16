@@ -1,0 +1,78 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using InventoryManager.Models.Domain
+@model IEnumerable<ApplicationUser>
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    ViewData["Title"] = "User Management";
+}
+
+<div class="container mt-4">
+    <h1>User Management</h1>
+
+    <div class="toolbar mb-3">
+        <button type="submit" form="userForm" asp-action="BlockUsers" class="btn btn-warning">Block</button>
+        <button type="submit" form="userForm" asp-action="UnblockUsers" class="btn btn-success"><i class="bi bi-unlock"></i> Unblock</button>
+        <button type="submit" form="userForm" asp-action="DeleteUsers" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete selected users?');"><i class="bi bi-trash"></i> Delete</button>
+        <button type="submit" form="userForm" asp-action="AddAdmins" class="btn btn-primary">Make Admin</button>
+        <button type="submit" form="userForm" asp-action="RemoveAdmins" class="btn btn-dark">Remove Admin</button>
+    </div>
+
+    <form id="userForm" method="post">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">
+                            <input type="checkbox" id="selectAll" class="form-check-input" />
+                        </th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Roles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>
+                                <input type="checkbox" name="userIds" value="@user.Id" class="form-check-input user-checkbox" />
+                            </td>
+                            <td>@user.Email</td>
+                            <td>
+                                @if (user.IsBlocked)
+                                {
+                                    <span class="badge bg-danger">Blocked</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                            </td>
+                            <td>
+                                @{
+                                    var roles = await UserManager.GetRolesAsync(user);
+                                    foreach(var role in roles)
+                                    {
+                                        <span class="badge bg-secondary">@role</span>
+                                    }
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('selectAll').addEventListener('change', function() {
+            var checkboxes = document.querySelectorAll('.user-checkbox');
+            for (var checkbox of checkboxes) {
+                checkbox.checked = this.checked;
+            }
+        });
+    </script>
+}
