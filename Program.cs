@@ -10,8 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 // 1. DATABASE CONFIGURATION (Enhanced Parser)
 // ==========================================
 // We check for "DefaultConnection" (Local) or "DATABASE_URL" (Render)
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-                       ?? Environment.GetEnvironmentVariable("DATABASE_URL");
+// 1. Prioritize Render/Production environment variable
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
+                       ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
 if (string.IsNullOrEmpty(connectionString))
 {
