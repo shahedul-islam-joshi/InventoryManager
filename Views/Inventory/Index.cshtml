@@ -1,0 +1,47 @@
+﻿@model IEnumerable<InventoryManager.Models.Domain.Inventory>
+@using System.Security.Claims
+
+@{
+    ViewData["Title"] = "Inventories";
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+}
+
+<h1>Inventories</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Create New</a>
+</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Created At</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Title)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Category)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.CreatedAt)
+            </td>
+            <td>
+                @if (item.OwnerId == userId)
+                {
+                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this?');">Delete</button>
+                    </form>
+                }
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

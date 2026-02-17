@@ -11,6 +11,6 @@ namespace InventoryManager.Data
         {
         }
 
-        // We will add DbSets later
+        public DbSet<Inventory> Inventories { get; set; }
     }
 }
