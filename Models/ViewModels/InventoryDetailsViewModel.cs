@@ -13,5 +13,8 @@ namespace InventoryManager.Models.ViewModels
         // Flag to indicate if the current logged-in user is the owner of this inventory
         // Used to show/hide the Settings tab
         public bool IsOwner { get; set; }
+
+        // List of items belonging to this inventory
+        public List<Item> Items { get; set; } = new List<Item>();
     }
 }

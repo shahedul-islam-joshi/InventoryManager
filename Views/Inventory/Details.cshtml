@@ -56,7 +56,53 @@
 <div class="tab-content" id="inventoryTabsContent">
   <!-- Items Tab Pane -->
   <div class="tab-pane fade show active p-3 border border-top-0" id="items" role="tabpanel" aria-labelledby="items-tab">
-      <p>Items will be implemented later.</p>
+      
+      <!-- Only the owner should see the 'Add Item' button -->
+      @if (Model.IsOwner)
+      {
+          <div class="mb-3">
+              <a asp-controller="Item" asp-action="Create" asp-route-inventoryId="@Model.Inventory.Id" class="btn btn-primary">Add Item</a>
+          </div>
+      }
+
+      @if (Model.Items.Any())
+      {
+          <table class="table table-striped">
+              <thead>
+                  <tr>
+                      <th>Name</th>
+                      <th>Description</th>
+                      <th>Created At</th>
+                      @if (Model.IsOwner)
+                      {
+                          <th>Actions</th>
+                      }
+                  </tr>
+              </thead>
+              <tbody>
+                  @foreach (var item in Model.Items)
+                  {
+                      <tr>
+                          <td>@item.Name</td>
+                          <td>@item.Description</td>
+                          <td>@item.CreatedAt.ToShortDateString()</td>
+                          @if (Model.IsOwner)
+                          {
+                              <td>
+                                  <form asp-controller="Item" asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;">
+                                      <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this item?');">Delete</button>
+                                  </form>
+                              </td>
+                          }
+                      </tr>
+                  }
+              </tbody>
+          </table>
+      }
+      else
+      {
+          <p>No items found for this inventory.</p>
+      }
   </div>
   
   <!-- Discussion Tab Pane -->

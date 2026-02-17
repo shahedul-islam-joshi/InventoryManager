@@ -12,5 +12,6 @@ namespace InventoryManager.Data
         }
 
         public DbSet<Inventory> Inventories { get; set; }
+        public DbSet<Item> Items { get; set; }
     }
 }

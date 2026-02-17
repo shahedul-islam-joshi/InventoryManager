@@ -51,12 +51,19 @@ namespace InventoryManager.Controllers
             // The view will use this to show/hide the Settings tab
             bool isOwner = (inventory.OwnerId == userId);
 
+            // Fetch items related to this inventory
+            var items = await _context.Items
+                .Where(i => i.InventoryId == id)
+                .OrderByDescending(i => i.CreatedAt)
+                .ToListAsync();
+
             // Create InventoryDetailsViewModel
             // Using a ViewModel allows us to pass 'IsOwner' alongside the 'Inventory' object
             var viewModel = new InventoryManager.Models.ViewModels.InventoryDetailsViewModel
             {
                 Inventory = inventory,
-                IsOwner = isOwner
+                IsOwner = isOwner,
+                Items = items
             };
 
             return View(viewModel);
