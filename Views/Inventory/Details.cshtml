@@ -1,0 +1,78 @@
+﻿@model InventoryManager.Models.ViewModels.InventoryDetailsViewModel
+
+@{
+    ViewData["Title"] = "Inventory Details";
+}
+
+<!-- Use a ViewModel to ensure type safety and cleaner view logic -->
+<!-- Displaying the core inventory details at the top -->
+<h1>@Model.Inventory.Title</h1>
+
+<div>
+    <hr />
+    <dl class="row">
+        <dt class = "col-sm-2">
+            Description
+        </dt>
+        <dd class = "col-sm-10">
+            @Model.Inventory.Description
+        </dd>
+        <dt class = "col-sm-2">
+            Category
+        </dt>
+        <dd class = "col-sm-10">
+            @Model.Inventory.Category
+        </dd>
+        <dt class = "col-sm-2">
+            Created At
+        </dt>
+        <dd class = "col-sm-10">
+            @Model.Inventory.CreatedAt
+        </dd>
+    </dl>
+</div>
+
+<!-- Tabs Navigation -->
+<!-- Using standard Bootstrap 5 nav-tabs -->
+<ul class="nav nav-tabs" id="inventoryTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="items-tab" data-bs-toggle="tab" data-bs-target="#items" type="button" role="tab" aria-controls="items" aria-selected="true">Items</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="discussion-tab" data-bs-toggle="tab" data-bs-target="#discussion" type="button" role="tab" aria-controls="discussion" aria-selected="false">Discussion</button>
+  </li>
+  
+  <!-- Only show Settings tab if the current user is the owner -->
+  <!-- This logic is handled by the boolean IsOwner flag passed from the Controller -->
+  @if (Model.IsOwner)
+  {
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="settings" aria-selected="false">Settings</button>
+      </li>
+  }
+</ul>
+
+<!-- Tabs Content -->
+<div class="tab-content" id="inventoryTabsContent">
+  <!-- Items Tab Pane -->
+  <div class="tab-pane fade show active p-3 border border-top-0" id="items" role="tabpanel" aria-labelledby="items-tab">
+      <p>Items will be implemented later.</p>
+  </div>
+  
+  <!-- Discussion Tab Pane -->
+  <div class="tab-pane fade p-3 border border-top-0" id="discussion" role="tabpanel" aria-labelledby="discussion-tab">
+      <p>Discussion feature coming soon.</p>
+  </div>
+  
+  <!-- Settings Tab Pane (Owner Only) -->
+  @if (Model.IsOwner)
+  {
+      <div class="tab-pane fade p-3 border border-top-0" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+          <p>Inventory settings (owner only).</p>
+      </div>
+  }
+</div>
+
+<div class="mt-3">
+    <a asp-action="Index">Back to List</a>
+</div>

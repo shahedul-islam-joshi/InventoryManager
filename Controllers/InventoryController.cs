@@ -24,6 +24,44 @@ namespace InventoryManager.Controllers
             return View(inventories);
         }
 
+        // GET: Inventory/Details/5
+        // Shows the details of an inventory item including items, discussion, and settings
+        [HttpGet]
+        public async Task<IActionResult> Details(Guid? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            // Get inventory from database
+            var inventory = await _context.Inventories
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (inventory == null)
+            {
+                return NotFound();
+            }
+
+            // Get current logged-in user ID
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // Determine if user is owner
+            // We check this in the controller to securely pass this flag to the view
+            // The view will use this to show/hide the Settings tab
+            bool isOwner = (inventory.OwnerId == userId);
+
+            // Create InventoryDetailsViewModel
+            // Using a ViewModel allows us to pass 'IsOwner' alongside the 'Inventory' object
+            var viewModel = new InventoryManager.Models.ViewModels.InventoryDetailsViewModel
+            {
+                Inventory = inventory,
+                IsOwner = isOwner
+            };
+
+            return View(viewModel);
+        }
+
         [HttpGet]
         public IActionResult Create()
         {
