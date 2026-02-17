@@ -33,20 +33,16 @@ namespace InventoryManager.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(Inventory inventory)
         {
-            // Set required fields that are not in form
+            // 1. Manually set the values
             inventory.Id = Guid.NewGuid();
-            inventory.CreatedAt = DateTime.Now;
+            inventory.CreatedAt = DateTime.UtcNow; // Use UtcNow for databases like PostgreSQL
             inventory.OwnerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            // Removing Validations for OwnerId and Id since we set them here
+            // 2. Clear validation for fields the user didn't type in
+            ModelState.Remove("Id");
             ModelState.Remove("OwnerId");
-            // Id is Guid, defaults to all 0s if not set, but we set it.
-            // However, ModelState validation happens before we set them?
-            // Actually, if we bind the model, the binder validates.
-            // OwnerId is string, might be required if nullable not set.
-            // In Entity, string is reference type, so it is required by default in recent .NET unless marked nullable?
-            // Let's make sure we handle this.
-            
+            ModelState.Remove("CreatedAt");
+
             if (ModelState.IsValid)
             {
                 _context.Inventories.Add(inventory);
