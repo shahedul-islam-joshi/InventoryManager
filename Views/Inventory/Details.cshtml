@@ -1,122 +1,171 @@
 ﻿@model InventoryManager.Models.ViewModels.InventoryDetailsViewModel
+@using InventoryManager.Models.ViewModels
 
 @{
     ViewData["Title"] = "Inventory Details";
 }
 
-<!-- Use a ViewModel to ensure type safety and cleaner view logic -->
-<!-- Displaying the core inventory details at the top -->
+@* Inventory header information *@
 <h1>@Model.Inventory.Title</h1>
 
 <div>
     <hr />
     <dl class="row">
-        <dt class = "col-sm-2">
-            Description
-        </dt>
-        <dd class = "col-sm-10">
-            @Model.Inventory.Description
-        </dd>
-        <dt class = "col-sm-2">
-            Category
-        </dt>
-        <dd class = "col-sm-10">
-            @Model.Inventory.Category
-        </dd>
-        <dt class = "col-sm-2">
-            Created At
-        </dt>
-        <dd class = "col-sm-10">
-            @Model.Inventory.CreatedAt
-        </dd>
+        <dt class="col-sm-2">Description</dt>
+        <dd class="col-sm-10">@Model.Inventory.Description</dd>
+
+        <dt class="col-sm-2">Category</dt>
+        <dd class="col-sm-10">@Model.Inventory.Category</dd>
+
+        <dt class="col-sm-2">Created At</dt>
+        <dd class="col-sm-10">@Model.Inventory.CreatedAt</dd>
     </dl>
 </div>
 
-<!-- Tabs Navigation -->
-<!-- Using standard Bootstrap 5 nav-tabs -->
+@* -----------------------------------------------------------------------
+   Tabs Navigation
+   - Items and Discussion are visible to everyone.
+   - Access tab is only shown to the Owner (IsOwner flag from controller).
+   WHY HIDE ACCESS TAB FROM NON-OWNERS?
+   Only the owner can manage who has access. Showing the tab to granted users
+   would be confusing and expose information they don't need.
+   ----------------------------------------------------------------------- *@
 <ul class="nav nav-tabs" id="inventoryTabs" role="tablist">
-  <li class="nav-item" role="presentation">
-    <button class="nav-link active" id="items-tab" data-bs-toggle="tab" data-bs-target="#items" type="button" role="tab" aria-controls="items" aria-selected="true">Items</button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="discussion-tab" data-bs-toggle="tab" data-bs-target="#discussion" type="button" role="tab" aria-controls="discussion" aria-selected="false">Discussion</button>
-  </li>
-  
-  <!-- Only show Settings tab if the current user is the owner -->
-  <!-- This logic is handled by the boolean IsOwner flag passed from the Controller -->
-  @if (Model.IsOwner)
-  {
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="settings" aria-selected="false">Settings</button>
-      </li>
-  }
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="items-tab"
+                data-bs-toggle="tab" data-bs-target="#items"
+                type="button" role="tab" aria-controls="items" aria-selected="true">
+            Items
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="discussion-tab"
+                data-bs-toggle="tab" data-bs-target="#discussion"
+                type="button" role="tab" aria-controls="discussion" aria-selected="false">
+            Discussion
+        </button>
+    </li>
+
+    @* Access tab — owner only *@
+    @if (Model.IsOwner)
+    {
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="access-tab"
+                    data-bs-toggle="tab" data-bs-target="#access"
+                    type="button" role="tab" aria-controls="access" aria-selected="false">
+                Access
+            </button>
+        </li>
+
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="settings-tab"
+                    data-bs-toggle="tab" data-bs-target="#settings"
+                    type="button" role="tab" aria-controls="settings" aria-selected="false">
+                Settings
+            </button>
+        </li>
+    }
 </ul>
 
-<!-- Tabs Content -->
+@* Tabs Content *@
 <div class="tab-content" id="inventoryTabsContent">
-  <!-- Items Tab Pane -->
-  <div class="tab-pane fade show active p-3 border border-top-0" id="items" role="tabpanel" aria-labelledby="items-tab">
-      
-      <!-- Only the owner should see the 'Add Item' button -->
-      @if (Model.IsOwner)
-      {
-          <div class="mb-3">
-              <a asp-controller="Item" asp-action="Create" asp-route-inventoryId="@Model.Inventory.Id" class="btn btn-primary">Add Item</a>
-          </div>
-      }
 
-      @if (Model.Items.Any())
-      {
-          <table class="table table-striped">
-              <thead>
-                  <tr>
-                      <th>Name</th>
-                      <th>Description</th>
-                      <th>Created At</th>
-                      @if (Model.IsOwner)
-                      {
-                          <th>Actions</th>
-                      }
-                  </tr>
-              </thead>
-              <tbody>
-                  @foreach (var item in Model.Items)
-                  {
-                      <tr>
-                          <td>@item.Name</td>
-                          <td>@item.Description</td>
-                          <td>@item.CreatedAt.ToShortDateString()</td>
-                          @if (Model.IsOwner)
-                          {
-                              <td>
-                                  <form asp-controller="Item" asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;">
-                                      <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this item?');">Delete</button>
-                                  </form>
-                              </td>
-                          }
-                      </tr>
-                  }
-              </tbody>
-          </table>
-      }
-      else
-      {
-          <p>No items found for this inventory.</p>
-      }
-  </div>
-  
-  <!-- Discussion Tab Pane -->
-  <div class="tab-pane fade p-3 border border-top-0" id="discussion" role="tabpanel" aria-labelledby="discussion-tab">
-      <p>Discussion feature coming soon.</p>
-  </div>
-  
-  <!-- Settings Tab Pane (Owner Only) -->
-  @if (Model.IsOwner)
-  {
-      <div class="tab-pane fade p-3 border border-top-0" id="settings" role="tabpanel" aria-labelledby="settings-tab">
-          <p>Inventory settings (owner only).</p>
-      </div>
-  }
+    @* -----------------------------------------------------------------------
+       Items Tab
+       Add Item button and Delete buttons use CanEdit (not IsOwner).
+       WHY CanEdit INSTEAD OF IsOwner?
+       Granted users also need to add/delete items. IsOwner would deny them.
+       CanEdit is true for both the owner and explicitly granted users.
+       ----------------------------------------------------------------------- *@
+    <div class="tab-pane fade show active p-3 border border-top-0"
+         id="items" role="tabpanel" aria-labelledby="items-tab">
+
+        @if (Model.CanEdit)
+        {
+            <div class="mb-3">
+                <a asp-controller="Item" asp-action="Create"
+                   asp-route-inventoryId="@Model.Inventory.Id"
+                   class="btn btn-primary">Add Item</a>
+            </div>
+        }
+
+        @if (Model.Items.Any())
+        {
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Created At</th>
+                        @if (Model.CanEdit)
+                        {
+                            <th>Actions</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td>@item.Name</td>
+                            <td>@item.Description</td>
+                            <td>@item.CreatedAt.ToShortDateString()</td>
+                            @if (Model.CanEdit)
+                            {
+                                <td>
+                                    <form asp-controller="Item" asp-action="Delete"
+                                          asp-route-id="@item.Id"
+                                          method="post" style="display:inline;">
+                                        <button type="submit" class="btn btn-danger btn-sm"
+                                                onclick="return confirm('Delete this item?');">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>No items found for this inventory.</p>
+        }
+    </div>
+
+    @* Discussion Tab *@
+    <div class="tab-pane fade p-3 border border-top-0"
+         id="discussion" role="tabpanel" aria-labelledby="discussion-tab">
+        <p>Discussion feature coming soon.</p>
+    </div>
+
+    @* Access Tab and Settings Tab — owner only *@
+    @if (Model.IsOwner)
+    {
+        @* -----------------------------------------------------------------------
+           Access Tab
+           Renders the _AccessTab partial with an AccessManageVM.
+           The partial handles the grant/remove forms.
+           ----------------------------------------------------------------------- *@
+        <div class="tab-pane fade p-3 border border-top-0"
+             id="access" role="tabpanel" aria-labelledby="access-tab">
+            @{
+                var accessVm = new AccessManageVM
+                {
+                    InventoryId = Model.Inventory.Id,
+                    UsersWithAccess = Model.UsersWithAccess
+                };
+            }
+            @await Html.PartialAsync("_AccessTab", accessVm)
+        </div>
+
+        <div class="tab-pane fade p-3 border border-top-0"
+             id="settings" role="tabpanel" aria-labelledby="settings-tab">
+            <p>Inventory settings (owner only).</p>
+        </div>
+    }
+
 </div>
 
 <div class="mt-3">

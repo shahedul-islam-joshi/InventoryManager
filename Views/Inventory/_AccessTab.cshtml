@@ -1,0 +1,92 @@
+@model InventoryManager.Models.ViewModels.AccessManageVM
+
+@*
+    _AccessTab.cshtml — Partial view for managing write access to an inventory.
+    Only rendered when the current user is the Owner (enforced in Details.cshtml).
+
+    WHY A PARTIAL VIEW?
+    Keeping the access UI in its own file makes Details.cshtml easier to read
+    and allows the access tab to be maintained independently.
+*@
+
+@* Show success or error messages from TempData (set by GrantAccess / RemoveAccess actions) *@
+@if (TempData["AccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["AccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["AccessError"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["AccessError"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<h5 class="mb-3">Users with Write Access</h5>
+
+@if (Model.UsersWithAccess.Any())
+{
+    <table class="table table-bordered table-sm mb-4">
+        <thead class="table-light">
+            <tr>
+                <th>Email</th>
+                <th>Username</th>
+                <th style="width: 120px;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in Model.UsersWithAccess)
+            {
+                <tr>
+                    <td>@user.Email</td>
+                    <td>@user.UserName</td>
+                    <td>
+                        @* POST form to remove access — no JavaScript required *@
+                        <form asp-controller="Inventory"
+                              asp-action="RemoveAccess"
+                              method="post">
+                            <input type="hidden" name="inventoryId" value="@Model.InventoryId" />
+                            <input type="hidden" name="targetUserId" value="@user.Id" />
+                            <button type="submit"
+                                    class="btn btn-danger btn-sm"
+                                    onclick="return confirm('Remove access for @user.Email?');">
+                                Remove
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p class="text-muted">No users have been granted write access yet.</p>
+}
+
+<hr />
+
+<h5 class="mb-3">Grant Access by Email</h5>
+
+@* Simple form — no JavaScript required. Email is submitted as a plain POST. *@
+<form asp-controller="Inventory"
+      asp-action="GrantAccess"
+      method="post"
+      class="row g-2 align-items-end">
+    <input type="hidden" name="inventoryId" value="@Model.InventoryId" />
+    <div class="col-auto">
+        <label for="email" class="form-label">User Email</label>
+        <input type="email"
+               id="email"
+               name="email"
+               class="form-control"
+               placeholder="user@example.com"
+               required />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Grant Access</button>
+    </div>
+</form>

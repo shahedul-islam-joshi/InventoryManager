@@ -1,20 +1,27 @@
 using InventoryManager.Data;
 using InventoryManager.Models.Domain;
 using InventoryManager.Models.ViewModels;
+using InventoryManager.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace InventoryManager.Controllers
 {
+    // WHY CONTROLLERS STAY THIN:
+    // ItemController handles HTTP routing and model binding only.
+    // All permission decisions are delegated to IAccessService.
+    // This means the "who can edit items" rule lives in exactly one place.
     [Authorize]
     public class ItemController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IAccessService _accessService;
 
-        public ItemController(ApplicationDbContext context)
+        public ItemController(ApplicationDbContext context, IAccessService accessService)
         {
             _context = context;
+            _accessService = accessService;
         }
 
         // GET: Item/Create?inventoryId=...
@@ -22,7 +29,6 @@ namespace InventoryManager.Controllers
         [HttpGet]
         public IActionResult Create(Guid inventoryId)
         {
-            // We initialize the ViewModel with the InventoryId so it can be passed to the view (usually as a hidden field)
             var model = new ItemCreateViewModel
             {
                 InventoryId = inventoryId
@@ -31,77 +37,69 @@ namespace InventoryManager.Controllers
         }
 
         // POST: Item/Create
-        // Handles the submission of the Create Item form
+        // Handles the submission of the Create Item form.
+        // Permission check: user must be owner OR have been granted write access.
         [HttpPost]
         public IActionResult Create(ItemCreateViewModel model)
         {
             if (ModelState.IsValid)
             {
-                // Verify that the current user is the owner of the inventory
-                // We must query the database to find the inventory and check its OwnerId
-                var inventory = _context.Inventories.FirstOrDefault(i => i.Id == model.InventoryId);
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-                if (inventory != null && inventory.OwnerId == userId)
+                // WHY USE AccessService HERE?
+                // Previously this controller checked inventory.OwnerId == userId directly.
+                // That approach breaks as soon as we add access grants — it would always
+                // deny granted users. AccessService encapsulates the full rule:
+                //   "owner OR explicitly granted user → allowed".
+                if (!_accessService.CanEditItems(model.InventoryId, userId))
                 {
-                    // Create the new Item entity from the ViewModel
-                    var newItem = new Item
-                    {
-                        Id = Guid.NewGuid(),
-                        InventoryId = model.InventoryId,
-                        Name = model.Name,
-                        Description = model.Description,
-                        CreatedAt = DateTime.UtcNow
-                    };
-
-                    _context.Items.Add(newItem);
-                    _context.SaveChanges();
-
-                    // Redirect back to the Inventory Details page
-                    return RedirectToAction("Details", "Inventory", new { id = model.InventoryId });
+                    // Return 403 Forbidden — the user is authenticated but not authorised
+                    return Forbid();
                 }
-                else
+
+                var newItem = new Item
                 {
-                    // If inventory not found or user is not owner, return Unauthorized or NotFound
-                    return Unauthorized();
-                }
+                    Id = Guid.NewGuid(),
+                    InventoryId = model.InventoryId,
+                    Name = model.Name,
+                    Description = model.Description,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Items.Add(newItem);
+                _context.SaveChanges();
+
+                return RedirectToAction("Details", "Inventory", new { id = model.InventoryId });
             }
 
-            // If validation fails, return the view with the model to show errors
             return View(model);
         }
 
         // POST: Item/Delete/5
-        // Deletes an item
+        // Deletes an item if the current user has write access to the parent inventory.
         [HttpPost]
         public IActionResult Delete(Guid id)
         {
-            // Find the item
             var item = _context.Items.FirstOrDefault(i => i.Id == id);
 
-            if (item != null)
+            if (item == null)
+                return RedirectToAction("Index", "Inventory");
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+            // WHY USE AccessService HERE?
+            // Same reason as Create: the old direct OwnerId check would deny granted users.
+            // AccessService is the single source of truth for "can this user edit items".
+            if (!_accessService.CanEditItems(item.InventoryId, userId))
             {
-                // Find the associated inventory to check ownership
-                var inventory = _context.Inventories.FirstOrDefault(i => i.Id == item.InventoryId);
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-                if (inventory != null && inventory.OwnerId == userId)
-                {
-                    _context.Items.Remove(item);
-                    _context.SaveChanges();
-
-                    // Redirect back to the Inventory Details page
-                    return RedirectToAction("Details", "Inventory", new { id = item.InventoryId });
-                }
-                else
-                {
-                    return Unauthorized();
-                }
+                // Return 403 Forbidden — authenticated but not authorised
+                return Forbid();
             }
 
-            // If item not found, just redirect back (or show error)
-            // Redirecting to Inventory Index as a fallback if we can't find the item/inventory to redirect to details
-            return RedirectToAction("Index", "Inventory");
+            _context.Items.Remove(item);
+            _context.SaveChanges();
+
+            return RedirectToAction("Details", "Inventory", new { id = item.InventoryId });
         }
     }
 }

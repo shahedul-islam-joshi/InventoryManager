@@ -58,6 +58,12 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
+// Register AccessService so it can be injected into controllers.
+// Scoped lifetime means one instance per HTTP request — appropriate for EF Core usage.
+builder.Services.AddScoped<InventoryManager.Services.Interfaces.IAccessService,
+                            InventoryManager.Services.AccessService>();
+
+
 var app = builder.Build();
 
 // ==========================================
