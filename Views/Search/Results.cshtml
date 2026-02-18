@@ -1,0 +1,152 @@
+@model InventoryManager.Models.ViewModels.SearchPageVM
+
+@{
+    ViewData["Title"] = string.IsNullOrWhiteSpace(Model.Query)
+        ? "Search"
+        : $"Search: {Model.Query}";
+}
+
+@* -----------------------------------------------------------------------
+   Search box — pre-filled with the current query so users can refine it.
+   Submits as GET so the URL is shareable/bookmarkable.
+   ----------------------------------------------------------------------- *@
+<div class="row mb-4">
+    <div class="col-md-8 col-lg-6">
+        <h1 class="h3 mb-3">Search</h1>
+        <form asp-controller="Search" asp-action="Results" method="get">
+            <div class="input-group">
+                <input type="search"
+                       name="q"
+                       value="@Model.Query"
+                       class="form-control form-control-lg"
+                       placeholder="Search inventories and items…"
+                       autofocus />
+                <button type="submit" class="btn btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                         class="bi bi-search" viewBox="0 0 16 16">
+                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.156a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/>
+                    </svg>
+                    Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* -----------------------------------------------------------------------
+   Results area
+   ----------------------------------------------------------------------- *@
+
+@if (string.IsNullOrWhiteSpace(Model.Query))
+{
+    @* No query submitted yet — show a prompt *@
+    <div class="text-muted">
+        <p>Enter a search term above to find inventories and items.</p>
+    </div>
+}
+else if (!Model.Results.Any())
+{
+    @* Query submitted but no matches *@
+    <div class="alert alert-info">
+        No results found for <strong>@Model.Query</strong>.
+        Try different keywords or a shorter phrase.
+    </div>
+}
+else
+{
+    @* Result summary *@
+    <p class="text-muted mb-3">
+        Showing <strong>@Model.Results.Count</strong> of
+        <strong>@Model.TotalCount</strong> results for
+        <strong>&ldquo;@Model.Query&rdquo;</strong>
+        &mdash; page @Model.Page of @Model.TotalPages
+    </p>
+
+    @* -----------------------------------------------------------------------
+       Result cards
+       Each card shows a type badge, a clickable title, and a text snippet.
+       WHY SNIPPET?
+       Showing a short excerpt of the matching text helps users confirm the
+       result is relevant before clicking — reduces unnecessary page loads.
+       ----------------------------------------------------------------------- *@
+    <div class="list-group mb-4">
+        @foreach (var result in Model.Results)
+        {
+            @* Build the correct link depending on result type *@
+            string href = result.Type == "Inventory"
+                ? Url.Action("Details", "Inventory", new { id = result.Id })!
+                : Url.Action("Details", "Inventory", new { id = result.InventoryId })! + "#items";
+
+            <a href="@href" class="list-group-item list-group-item-action py-3">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    @if (result.Type == "Inventory")
+                    {
+                        <span class="badge bg-primary">Inventory</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Item</span>
+                    }
+                    <strong>@result.Title</strong>
+                    @* Rank shown as a subtle relevance indicator *@
+                    <small class="text-muted ms-auto">
+                        relevance: @result.Rank.ToString("F2")
+                    </small>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(result.Snippet))
+                {
+                    <p class="mb-0 text-muted small">@result.Snippet</p>
+                }
+            </a>
+        }
+    </div>
+
+    @* -----------------------------------------------------------------------
+       Pagination
+       Simple prev/next + numbered page links using Bootstrap pagination.
+       WHY PAGINATION?
+       Returning all results at once is slow and overwhelming for large datasets.
+       Pagination limits the result set to a manageable size per page.
+       ----------------------------------------------------------------------- *@
+    @if (Model.TotalPages > 1)
+    {
+        <nav aria-label="Search results pages">
+            <ul class="pagination">
+
+                @* Previous button *@
+                <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                    <a class="page-link"
+                       asp-controller="Search" asp-action="Results"
+                       asp-route-q="@Model.Query"
+                       asp-route-page="@(Model.Page - 1)">
+                        &laquo; Prev
+                    </a>
+                </li>
+
+                @* Numbered pages *@
+                @for (int p = 1; p <= Model.TotalPages; p++)
+                {
+                    <li class="page-item @(p == Model.Page ? "active" : "")">
+                        <a class="page-link"
+                           asp-controller="Search" asp-action="Results"
+                           asp-route-q="@Model.Query"
+                           asp-route-page="@p">
+                            @p
+                        </a>
+                    </li>
+                }
+
+                @* Next button *@
+                <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+                    <a class="page-link"
+                       asp-controller="Search" asp-action="Results"
+                       asp-route-q="@Model.Query"
+                       asp-route-page="@(Model.Page + 1)">
+                        Next &raquo;
+                    </a>
+                </li>
+
+            </ul>
+        </nav>
+    }
+}

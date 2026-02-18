@@ -70,6 +70,11 @@ builder.Services.AddScoped<InventoryManager.Services.Interfaces.IDiscussionServi
 // Register SignalR — built into ASP.NET Core, no extra NuGet package required
 builder.Services.AddSignalR();
 
+// Register SearchService for full-text search via PostgreSQL FTS
+builder.Services.AddScoped<InventoryManager.Services.Interfaces.ISearchService,
+                            InventoryManager.Services.SearchService>();
+
+
 
 var app = builder.Build();
 
