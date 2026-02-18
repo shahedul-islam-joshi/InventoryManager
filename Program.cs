@@ -63,6 +63,13 @@ builder.Services.AddRazorPages();
 builder.Services.AddScoped<InventoryManager.Services.Interfaces.IAccessService,
                             InventoryManager.Services.AccessService>();
 
+// Register DiscussionService for discussion persistence
+builder.Services.AddScoped<InventoryManager.Services.Interfaces.IDiscussionService,
+                            InventoryManager.Services.DiscussionService>();
+
+// Register SignalR — built into ASP.NET Core, no extra NuGet package required
+builder.Services.AddSignalR();
+
 
 var app = builder.Build();
 
@@ -88,6 +95,10 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapRazorPages();
+
+// Map the SignalR hub endpoint — clients connect to /discussionHub
+app.MapHub<InventoryManager.Hubs.DiscussionHub>("/discussionHub");
+
 
 // ==========================================
 // 4. AUTO-MIGRATE & SEED DATA

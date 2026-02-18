@@ -19,13 +19,15 @@ namespace InventoryManager.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IAccessService _accessService;
+        private readonly IDiscussionService _discussionService;
 
         // IAccessService is injected — the controller never instantiates it directly.
         // This follows the Dependency Inversion principle and keeps the controller testable.
-        public InventoryController(ApplicationDbContext context, IAccessService accessService)
+        public InventoryController(ApplicationDbContext context, IAccessService accessService, IDiscussionService discussionService)
         {
             _context = context;
             _accessService = accessService;
+            _discussionService = discussionService;
         }
 
         [HttpGet]
@@ -66,13 +68,17 @@ namespace InventoryManager.Controllers
                 ? await _accessService.GetUsersWithAccessAsync(inventory.Id)
                 : new List<ApplicationUser>();
 
+            // Load discussion posts for server-side rendering (guests can read without JS)
+            var discussionPosts = await _discussionService.GetPostsAsync(inventory.Id);
+
             var viewModel = new InventoryDetailsViewModel
             {
                 Inventory = inventory,
                 IsOwner = isOwner,
                 CanEdit = canEdit,
                 Items = items,
-                UsersWithAccess = usersWithAccess
+                UsersWithAccess = usersWithAccess,
+                DiscussionPosts = discussionPosts
             };
 
             return View(viewModel);

@@ -1,4 +1,5 @@
 ﻿using InventoryManager.Models.Domain;
+using InventoryManager.Models.DTOs;
 
 namespace InventoryManager.Models.ViewModels
 {
@@ -28,6 +29,10 @@ namespace InventoryManager.Models.ViewModels
         // Users who have been explicitly granted write access (excluding the owner).
         // Only populated when IsOwner is true — used to render the Access tab.
         public List<ApplicationUser> UsersWithAccess { get; set; } = new List<ApplicationUser>();
+
+        // Discussion posts pre-loaded for server-side rendering on initial page load.
+        // Real-time updates are handled by SignalR after the page loads.
+        public List<DiscussionPostDto> DiscussionPosts { get; set; } = new List<DiscussionPostDto>();
     }
 }
 

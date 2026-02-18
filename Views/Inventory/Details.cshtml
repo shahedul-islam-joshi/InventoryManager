@@ -134,10 +134,17 @@
         }
     </div>
 
-    @* Discussion Tab *@
+    @* Discussion Tab — real-time via SignalR, server-rendered posts on initial load *@
     <div class="tab-pane fade p-3 border border-top-0"
          id="discussion" role="tabpanel" aria-labelledby="discussion-tab">
-        <p>Discussion feature coming soon.</p>
+        @{
+            var discussionVm = new InventoryManager.Models.ViewModels.DiscussionTabViewModel
+            {
+                InventoryId = Model.Inventory.Id,
+                Posts = Model.DiscussionPosts
+            };
+        }
+        @await Html.PartialAsync("_DiscussionTab", discussionVm)
     </div>
 
     @* Access Tab and Settings Tab — owner only *@
@@ -171,3 +178,19 @@
 <div class="mt-3">
     <a asp-action="Index">Back to List</a>
 </div>
+
+@*
+    Scripts section — only loaded on this page.
+    WHY LOAD SIGNALR HERE AND NOT IN _Layout?
+    SignalR is only needed on the Inventory Details page.
+    Loading it globally would waste bandwidth on every other page.
+    The layout's @await RenderSectionAsync("Scripts", required: false) renders this block.
+*@
+@section Scripts {
+    @* SignalR JavaScript client — loaded from CDN, no local copy required *@
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"
+            integrity="sha512-O9LCEFBnkSBqhqBWHBBCkSzFBGDEFMYfXQHBFRaOhvSFQjFMHpFKBrSdVlMUBssHSGMBMBbJFLFpBDXFMqbQ=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    @* Discussion real-time logic *@
+    <script src="~/js/discussion-signalr.js" asp-append-version="true"></script>
+}

@@ -17,6 +17,9 @@ namespace InventoryManager.Data
         // Stores explicit write-access grants for non-owner users
         public DbSet<InventoryAccess> InventoryAccesses { get; set; }
 
+        // Stores discussion messages for each inventory
+        public DbSet<DiscussionPost> DiscussionPosts { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

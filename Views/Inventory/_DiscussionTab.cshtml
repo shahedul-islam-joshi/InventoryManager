@@ -1,0 +1,69 @@
+@model InventoryManager.Models.ViewModels.DiscussionTabViewModel
+
+@*
+    _DiscussionTab.cshtml — Partial view for the real-time discussion tab.
+
+    Guests (unauthenticated) can read existing messages (rendered server-side).
+    Only authenticated users see the Send form.
+
+    The JS in discussion-signalr.js connects to the hub, joins the group,
+    and appends new messages in real-time without a page refresh.
+*@
+
+@*
+    data-inventory-id is read by discussion-signalr.js to join the correct group.
+    WHY A data- ATTRIBUTE?
+    It avoids embedding a Razor value inside the JS file, keeping the JS
+    framework-agnostic and reusable.
+*@
+<div id="discussion-container" data-inventory-id="@Model.InventoryId">
+
+    @* -----------------------------------------------------------------------
+       Existing messages — rendered server-side on page load so guests and
+       users without JS can still read the history.
+       ----------------------------------------------------------------------- *@
+    <div id="discussion-messages"
+         style="max-height: 400px; overflow-y: auto;"
+         class="mb-3">
+
+        @if (Model.Posts.Any())
+        {
+            @foreach (var post in Model.Posts)
+            {
+                <div class="mb-2 p-2 border rounded bg-light">
+                    <strong class="text-primary">@post.UserName</strong>
+                    <small class="text-muted">@post.CreatedAt.ToShortTimeString()</small>
+                    <div>@post.Content</div>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="text-muted" id="no-messages-placeholder">
+                No messages yet. Be the first to start the discussion!
+            </p>
+        }
+    </div>
+
+    @* Send form — only shown to authenticated users *@
+    @if (User.Identity != null && User.Identity.IsAuthenticated)
+    {
+        <div class="d-flex gap-2">
+            <textarea id="discussion-input"
+                      class="form-control"
+                      rows="2"
+                      placeholder="Write a message… (Enter to send, Shift+Enter for new line)"
+                      maxlength="2000"></textarea>
+            <button id="discussion-send" class="btn btn-primary align-self-end">
+                Send
+            </button>
+        </div>
+    }
+    else
+    {
+        <p class="text-muted">
+            <a asp-area="Identity" asp-page="/Account/Login">Log in</a> to join the discussion.
+        </p>
+    }
+
+</div>
