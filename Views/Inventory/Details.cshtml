@@ -7,6 +7,7 @@
 
 @* Inventory header information *@
 <h1>@Model.Inventory.Title</h1>
+@Html.AntiForgeryToken()
 
 <div>
     <hr />
@@ -43,6 +44,13 @@
                 data-bs-toggle="tab" data-bs-target="#discussion"
                 type="button" role="tab" aria-controls="discussion" aria-selected="false">
             Discussion
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="statistics-tab"
+                data-bs-toggle="tab" data-bs-target="#statistics"
+                type="button" role="tab" aria-controls="statistics" aria-selected="false">
+            Statistics
         </button>
     </li>
 
@@ -89,49 +97,13 @@
             </div>
         }
 
-        @if (Model.Items.Any())
-        {
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Created At</th>
-                        @if (Model.CanEdit)
-                        {
-                            <th>Actions</th>
-                        }
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in Model.Items)
-                    {
-                        <tr>
-                            <td>@item.Name</td>
-                            <td>@item.Description</td>
-                            <td>@item.CreatedAt.ToShortDateString()</td>
-                            @if (Model.CanEdit)
-                            {
-                                <td>
-                                    <form asp-controller="Item" asp-action="Delete"
-                                          asp-route-id="@item.Id"
-                                          method="post" style="display:inline;">
-                                        <button type="submit" class="btn btn-danger btn-sm"
-                                                onclick="return confirm('Delete this item?');">
-                                            Delete
-                                        </button>
-                                    </form>
-                                </td>
-                            }
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
-        else
-        {
-            <p>No items found for this inventory.</p>
-        }
+        @await Html.PartialAsync("_ItemsTab", Model)
+    </div>
+
+    @* Statistics Tab *@
+    <div class="tab-pane fade p-3 border border-top-0"
+         id="statistics" role="tabpanel" aria-labelledby="statistics-tab">
+        @await Html.PartialAsync("_StatisticsTab", Model)
     </div>
 
     @* Discussion Tab — real-time via SignalR, server-rendered posts on initial load *@

@@ -1,0 +1,51 @@
+@using InventoryManager.Services.Interfaces
+@inject IStatisticsService Stats
+
+@{
+    var totalItems = Stats.GetTotalItems(Model.Inventory.Id);
+    var totalLikes = Stats.GetTotalLikes(Model.Inventory.Id);
+    var mostLiked = Stats.GetMostLikedItem(Model.Inventory.Id);
+    var latest = Stats.GetLatestItem(Model.Inventory.Id);
+}
+
+<div class="card mt-3">
+    <div class="card-header bg-info text-white">
+        <h4 class="mb-0">Inventory Statistics</h4>
+    </div>
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <h5>Total Items</h5>
+                <p class="display-6">@totalItems</p>
+            </div>
+            <div class="col-md-3">
+                <h5>Total Likes</h5>
+                <p class="display-6 text-danger">@totalLikes</p>
+            </div>
+            <div class="col-md-3">
+                <h5>Most Liked Item</h5>
+                @if (mostLiked != null)
+                {
+                    <p class="lead">@mostLiked.Name</p>
+                    <small class="text-muted">(@mostLiked.ItemLikes.Count likes)</small>
+                }
+                else
+                {
+                    <p class="text-muted">N/A</p>
+                }
+            </div>
+            <div class="col-md-3">
+                <h5>Latest Item</h5>
+                @if (latest != null)
+                {
+                    <p class="lead">@latest.Name</p>
+                    <small class="text-muted">@latest.CreatedAt.ToShortDateString()</small>
+                }
+                else
+                {
+                    <p class="text-muted">N/A</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>

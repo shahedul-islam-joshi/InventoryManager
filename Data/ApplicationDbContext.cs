@@ -13,6 +13,7 @@ namespace InventoryManager.Data
 
         public DbSet<Inventory> Inventories { get; set; }
         public DbSet<Item> Items { get; set; }
+        public DbSet<ItemLike> ItemLikes { get; set; }
 
         // Stores explicit write-access grants for non-owner users
         public DbSet<InventoryAccess> InventoryAccesses { get; set; }

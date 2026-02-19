@@ -74,6 +74,10 @@ builder.Services.AddSignalR();
 builder.Services.AddScoped<InventoryManager.Services.Interfaces.ISearchService,
                             InventoryManager.Services.SearchService>();
 
+// Register StatisticsService for inventory analytics
+builder.Services.AddScoped<InventoryManager.Services.Interfaces.IStatisticsService,
+                            InventoryManager.Services.StatisticsService>();
+
 
 
 var app = builder.Build();

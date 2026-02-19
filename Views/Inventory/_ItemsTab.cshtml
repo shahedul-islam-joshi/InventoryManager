@@ -1,0 +1,54 @@
+@model InventoryManager.Models.ViewModels.InventoryDetailsViewModel
+
+@if (Model.Items.Any())
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Created At</th>
+                <th>Likes</th>
+                @if (Model.CanEdit)
+                {
+                    <th>Actions</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td>@item.Name</td>
+                    <td>@item.Description</td>
+                    <td>@item.CreatedAt.ToShortDateString()</td>
+                    <td>
+                        <button class="btn btn-outline-danger btn-sm like-btn" data-id="@item.Id">
+                            ❤️ Like
+                        </button>
+                        <span id="like-count-@item.Id">
+                            @item.ItemLikes.Count
+                        </span>
+                    </td>
+                    @if (Model.CanEdit)
+                    {
+                        <td>
+                            <form asp-controller="Item" asp-action="Delete"
+                                  asp-route-id="@item.Id"
+                                  method="post" style="display:inline;">
+                                <button type="submit" class="btn btn-danger btn-sm"
+                                        onclick="return confirm('Delete this item?');">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No items found for this inventory.</p>
+}

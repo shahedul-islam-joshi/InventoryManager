@@ -4,6 +4,7 @@ using InventoryManager.Models.ViewModels;
 using InventoryManager.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace InventoryManager.Controllers
@@ -101,5 +102,44 @@ namespace InventoryManager.Controllers
 
             return RedirectToAction("Details", "Inventory", new { id = item.InventoryId });
         }
+
+        // POST: Item/ToggleLike
+        // Toggles a like for an item for the current logged-in user.
+        // Returns the updated like count as JSON.
+        [HttpPost]
+        public async Task<IActionResult> ToggleLike([FromBody] LikeRequest request)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var item = await _context.Items.Include(i => i.ItemLikes).FirstOrDefaultAsync(i => i.Id == request.ItemId);
+
+            if (item == null) return NotFound();
+
+            var existingLike = item.ItemLikes.FirstOrDefault(l => l.UserId == userId);
+
+            if (existingLike == null)
+            {
+                // Like it!
+                item.ItemLikes.Add(new ItemLike
+                {
+                    Id = Guid.NewGuid(),
+                    ItemId = item.Id,
+                    UserId = userId
+                });
+            }
+            else
+            {
+                // Unlike it!
+                _context.ItemLikes.Remove(existingLike);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Json(new { likes = item.ItemLikes.Count });
+        }
+    }
+
+    public class LikeRequest
+    {
+        public Guid ItemId { get; set; }
     }
 }

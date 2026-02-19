@@ -15,5 +15,6 @@ namespace InventoryManager.Models.Domain
         public string Description { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; }
+        public ICollection<ItemLike> ItemLikes { get; set; } = new List<ItemLike>();
     }
 }
