@@ -1,0 +1,27 @@
+@model InventoryManager.Models.ViewModels.InventoryDetailsViewModel
+@{
+    // Settings tab — owner only. Provides links to Edit, toggle visibility, and delete the inventory.
+}
+
+<div class="p-2">
+    <h4>Inventory Settings</h4>
+
+    <div class="list-group mb-4">
+        <a asp-controller="Inventory" asp-action="Edit" asp-route-id="@Model.Inventory.Id"
+           class="list-group-item list-group-item-action">
+            ✏️ Edit title, description, category &amp; tags
+        </a>
+    </div>
+
+    <h5 class="text-danger">Danger Zone</h5>
+    <div class="card border-danger">
+        <div class="card-body">
+            <p class="text-muted mb-2">Deleting an inventory is permanent and cannot be undone.</p>
+            <form asp-controller="Inventory" asp-action="Delete" asp-route-id="@Model.Inventory.Id"
+                  method="post" onsubmit="return confirm('Delete this inventory and ALL its items?');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-danger">Delete Inventory</button>
+            </form>
+        </div>
+    </div>
+</div>

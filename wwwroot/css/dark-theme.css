@@ -1,0 +1,33 @@
+/* dark-theme.css — applied when user prefers dark mode */
+:root {
+    --bg-primary: #1a1a2e;
+    --bg-secondary: #16213e;
+    --bg-card: #0f3460;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+    --border-color: #2a2a4a;
+    --input-bg: #1e1e3a;
+    --link-color: #4fc3f7;
+}
+
+body {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+.navbar { background-color: var(--bg-secondary) !important; border-bottom: 1px solid var(--border-color) !important; }
+.navbar-brand, .nav-link { color: var(--text-primary) !important; }
+.navbar-light .navbar-nav .nav-link { color: var(--text-secondary) !important; }
+.navbar-light .navbar-nav .nav-link:hover { color: var(--link-color) !important; }
+
+.card { background-color: var(--bg-card) !important; border-color: var(--border-color) !important; color: var(--text-primary) !important; }
+.table { color: var(--text-primary) !important; }
+.table-striped tbody tr:nth-of-type(odd) { background-color: rgba(255,255,255,0.04) !important; }
+.form-control, .form-select { background-color: var(--input-bg) !important; color: var(--text-primary) !important; border-color: var(--border-color) !important; }
+.list-group-item { background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; border-color: var(--border-color) !important; }
+.list-group-item-action:hover { background-color: var(--bg-card) !important; }
+a { color: var(--link-color) !important; }
+.nav-tabs .nav-link { color: var(--text-secondary) !important; }
+.nav-tabs .nav-link.active { background-color: var(--bg-card) !important; color: var(--text-primary) !important; border-color: var(--border-color) !important; }
+.tab-pane.border { border-color: var(--border-color) !important; }
+footer { background-color: var(--bg-secondary) !important; color: var(--text-secondary) !important; }

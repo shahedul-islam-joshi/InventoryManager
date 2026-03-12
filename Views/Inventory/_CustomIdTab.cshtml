@@ -1,0 +1,63 @@
+@model InventoryManager.Models.ViewModels.InventoryDetailsViewModel
+@using InventoryManager.Data
+@inject ApplicationDbContext Db
+@{
+    // Custom ID tab — shows the current ID template segments and a live preview.
+    var elements = Db.IdElements
+        .Where(e => e.InventoryId == Model.Inventory.Id)
+        .OrderBy(e => e.Order)
+        .ToList();
+}
+
+<div class="p-2">
+    <h4>Custom Item IDs</h4>
+    <p class="text-muted">
+        Build a template that determines how item IDs are generated.
+        Each segment is concatenated in order. Supported types:
+        <strong>Fixed</strong> (literal text), <strong>Sequence</strong> (auto-incrementing number),
+        <strong>Random</strong> (random alphanumeric), <strong>Date</strong> (current date).
+    </p>
+
+    @if (elements.Any())
+    {
+        <h5 class="mt-3">Current Template</h5>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            @foreach (var el in elements)
+            {
+                <span class="badge bg-secondary p-2">
+                    [@el.Order] @el.Type
+                    @if (!string.IsNullOrEmpty(el.Format)) { <em>&nbsp;(@el.Format)</em> }
+                </span>
+            }
+        </div>
+
+        <div id="id-preview" class="alert alert-light">
+            <strong>Preview:</strong>
+            <span id="id-preview-value" class="font-monospace text-primary">
+                Computing…
+            </span>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            No ID template defined. Items will receive a UUID as their internal ID only.
+            Configure a template to give items human-readable custom IDs.
+        </div>
+    }
+
+    @if (Model.IsOwner)
+    {
+        <p class="text-muted small mt-2">
+            Full drag-and-drop template builder UI is loaded from
+            <code>~/js/inventory-id-builder.js</code>.
+        </p>
+    }
+</div>
+
+@section Scripts {
+    <script src="~/js/inventory-id-builder.js" asp-append-version="true"></script>
+    <script>
+        initIdBuilder('@Model.Inventory.Id', @elements.Count);
+    </script>
+}

@@ -1,0 +1,13 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+E:\itransition\project\InventoryManager\Services\TagService.cs(73,18): error CS0411: The type arguments for method 'AsyncEnumerable.ToListAsync<TSource>(IAsyncEnumerable<TSource>, CancellationToken)' cannot be inferred from the usage. Try specifying the type arguments explicitly. [E:\itransition\project\InventoryManager\InventoryManager.csproj]
+E:\itransition\project\InventoryManager\Controllers\DiscussionController.cs(41,38): error CS1501: No overload for method 'AddPostAsync' takes 4 arguments [E:\itransition\project\InventoryManager\InventoryManager.csproj]
+
+Build FAILED.
+
+E:\itransition\project\InventoryManager\Services\TagService.cs(73,18): error CS0411: The type arguments for method 'AsyncEnumerable.ToListAsync<TSource>(IAsyncEnumerable<TSource>, CancellationToken)' cannot be inferred from the usage. Try specifying the type arguments explicitly. [E:\itransition\project\InventoryManager\InventoryManager.csproj]
+E:\itransition\project\InventoryManager\Controllers\DiscussionController.cs(41,38): error CS1501: No overload for method 'AddPostAsync' takes 4 arguments [E:\itransition\project\InventoryManager\InventoryManager.csproj]
+    0 Warning(s)
+    2 Error(s)
+
+Time Elapsed 00:00:03.12

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using InventoryManager.Models.Domain;
+using InventoryManager.Data.Configurations;
 
 namespace InventoryManager.Data
 {
@@ -20,21 +21,19 @@ namespace InventoryManager.Data
 
         // Stores discussion messages for each inventory
         public DbSet<DiscussionPost> DiscussionPosts { get; set; }
+        public DbSet<Tag> Tags { get; set; }
+        public DbSet<InventoryTag> InventoryTags { get; set; }
+        public DbSet<InventoryField> InventoryFields { get; set; }
+        public DbSet<IdElement> IdElements { get; set; }
+        public DbSet<InventorySequence> InventorySequences { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Fluent API configuration for InventoryAccess
-            // WHY FLUENT API?
-            // A unique composite index cannot be expressed with a single data annotation.
-            // Fluent API keeps the domain model free of EF-specific attributes.
-            modelBuilder.Entity<InventoryAccess>(entity =>
-            {
-                // Prevent the same user from being granted access to the same inventory twice
-                entity.HasIndex(a => new { a.InventoryId, a.UserId }).IsUnique();
-            });
+            // Apply all IEntityTypeConfiguration<T> classes in this assembly automatically.
+            // This keeps OnModelCreating clean — each entity's mapping is in its own file.
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
         }
     }
 }
-

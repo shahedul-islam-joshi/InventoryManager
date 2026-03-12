@@ -76,6 +76,69 @@ namespace InventoryManager.Controllers
             return View(model);
         }
 
+        // GET: Item/Edit/5
+        [HttpGet]
+        public async Task<IActionResult> Edit(Guid id)
+        {
+            var item = await _context.Items.FirstOrDefaultAsync(i => i.Id == id);
+            if (item == null) return NotFound();
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            if (!_accessService.CanEditItems(item.InventoryId, userId))
+                return Forbid();
+
+            var vm = new ItemEditVM
+            {
+                Id = item.Id,
+                InventoryId = item.InventoryId,
+                Name = item.Name,
+                Description = item.Description,
+                CustomId = item.CustomId,
+                Text1 = item.Text1, Text2 = item.Text2, Text3 = item.Text3,
+                Number1 = item.Number1, Number2 = item.Number2, Number3 = item.Number3,
+                Bool1 = item.Bool1, Bool2 = item.Bool2, Bool3 = item.Bool3,
+                Date1 = item.Date1, Date2 = item.Date2, Date3 = item.Date3,
+                Version = item.Version
+            };
+
+            return View(vm);
+        }
+
+        // POST: Item/Edit/5
+        [HttpPost]
+        public async Task<IActionResult> Edit(ItemEditVM vm)
+        {
+            if (!ModelState.IsValid) return View(vm);
+
+            var item = await _context.Items.FirstOrDefaultAsync(i => i.Id == vm.Id);
+            if (item == null) return NotFound();
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            if (!_accessService.CanEditItems(item.InventoryId, userId))
+                return Forbid();
+
+            item.Name = vm.Name;
+            item.Description = vm.Description;
+            item.Text1 = vm.Text1; item.Text2 = vm.Text2; item.Text3 = vm.Text3;
+            item.Number1 = vm.Number1; item.Number2 = vm.Number2; item.Number3 = vm.Number3;
+            item.Bool1 = vm.Bool1; item.Bool2 = vm.Bool2; item.Bool3 = vm.Bool3;
+            item.Date1 = vm.Date1; item.Date2 = vm.Date2; item.Date3 = vm.Date3;
+
+            try
+            {
+                // Set original RowVersion for optimistic concurrency detection
+                _context.Entry(item).Property(i => i.Version).OriginalValue = vm.Version;
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                ModelState.AddModelError(string.Empty, "This item was modified by someone else. Please reload and try again.");
+                return View(vm);
+            }
+
+            return RedirectToAction("Details", "Inventory", new { id = item.InventoryId });
+        }
+
         // POST: Item/Delete/5
         // Deletes an item if the current user has write access to the parent inventory.
         [HttpPost]

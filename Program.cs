@@ -55,8 +55,20 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddViewLocalization()
+    .AddDataAnnotationsLocalization();
+    
 builder.Services.AddRazorPages();
+
+// Configure Localization
+var supportedCultures = new[] { "en", "es", "pl" };
+builder.Services.Configure<Microsoft.AspNetCore.Builder.RequestLocalizationOptions>(options =>
+{
+    options.SetDefaultCulture("en");
+    options.AddSupportedCultures(supportedCultures);
+    options.AddSupportedUICultures(supportedCultures);
+});
 
 // Register AccessService so it can be injected into controllers.
 // Scoped lifetime means one instance per HTTP request — appropriate for EF Core usage.
@@ -78,6 +90,16 @@ builder.Services.AddScoped<InventoryManager.Services.Interfaces.ISearchService,
 builder.Services.AddScoped<InventoryManager.Services.Interfaces.IStatisticsService,
                             InventoryManager.Services.StatisticsService>();
 
+// Register remaining core domain services
+builder.Services.AddScoped<InventoryManager.Services.Interfaces.IInventoryService,
+                            InventoryManager.Services.InventoryService>();
+builder.Services.AddScoped<InventoryManager.Services.Interfaces.IItemService,
+                            InventoryManager.Services.ItemService>();
+builder.Services.AddScoped<InventoryManager.Services.Interfaces.ICustomIdService,
+                            InventoryManager.Services.CustomIdService>();
+builder.Services.AddScoped<InventoryManager.Services.Interfaces.ITagService,
+                            InventoryManager.Services.TagService>();
+
 
 
 var app = builder.Build();
@@ -93,6 +115,9 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+// Apply Localization before Routing
+app.UseRequestLocalization();
 app.UseRouting();
 
 app.UseAuthentication();

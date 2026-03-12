@@ -9,6 +9,7 @@ namespace InventoryManager.Models.Domain
 
         // Foreign key: which inventory this access grant belongs to
         public Guid InventoryId { get; set; }
+        public Inventory? Inventory { get; set; }
 
         // Foreign key: which user has been granted access (ASP.NET Identity user ID)
         public string UserId { get; set; } = string.Empty;

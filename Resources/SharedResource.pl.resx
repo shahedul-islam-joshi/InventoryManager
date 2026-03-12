@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="Home">
+    <value>Strona Główna</value>
+  </data>
+  <data name="Inventories">
+    <value>Inwentarze</value>
+  </data>
+  <data name="Search">
+    <value>Szukaj…</value>
+  </data>
+  <data name="Login">
+    <value>Zaloguj</value>
+  </data>
+  <data name="Register">
+    <value>Zarejestruj</value>
+  </data>
+</root>

@@ -1,0 +1,17 @@
+/* light-theme.css — clean light theme (default).
+   Overrides are minimal since Bootstrap already ships a light theme. */
+:root {
+    --bg-primary: #f8f9fa;
+    --bg-card: #ffffff;
+    --text-primary: #212529;
+    --link-color: #0d6efd;
+}
+
+body {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+a {
+    color: var(--link-color);
+}

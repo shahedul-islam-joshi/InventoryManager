@@ -192,5 +192,71 @@ namespace InventoryManager.Controllers
 
             return RedirectToAction(nameof(Details), new { id = inventoryId });
         }
+
+        // -----------------------------------------------------------------------
+        // GET: Inventory/Edit/5
+        // Shows the edit form pre-filled with current inventory data.
+        // Only the owner can edit inventory metadata.
+        // -----------------------------------------------------------------------
+        [HttpGet]
+        public async Task<IActionResult> Edit(Guid id)
+        {
+            var inventory = await _context.Inventories
+                .Include(i => i.InventoryTags).ThenInclude(it => it.Tag)
+                .FirstOrDefaultAsync(i => i.Id == id);
+
+            if (inventory == null) return NotFound();
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            if (!PermissionHelper.IsOwner(inventory, userId)) return Forbid();
+
+            var vm = new InventoryManager.Models.ViewModels.InventoryEditVM
+            {
+                Id = inventory.Id,
+                Title = inventory.Title,
+                Description = inventory.Description,
+                Category = inventory.Category,
+                ImageUrl = inventory.ImageUrl,
+                IsPublic = inventory.IsPublic,
+                Tags = string.Join(", ", inventory.InventoryTags.Select(it => it.Tag.Name)),
+                Version = inventory.Version
+            };
+
+            return View(vm);
+        }
+
+        // -----------------------------------------------------------------------
+        // POST: Inventory/Edit/5
+        // -----------------------------------------------------------------------
+        [HttpPost]
+        public async Task<IActionResult> Edit(InventoryManager.Models.ViewModels.InventoryEditVM vm)
+        {
+            if (!ModelState.IsValid) return View(vm);
+
+            var inventory = await _context.Inventories.FirstOrDefaultAsync(i => i.Id == vm.Id);
+            if (inventory == null) return NotFound();
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            if (!PermissionHelper.IsOwner(inventory, userId)) return Forbid();
+
+            inventory.Title = vm.Title;
+            inventory.Description = vm.Description;
+            inventory.Category = vm.Category;
+            inventory.ImageUrl = vm.ImageUrl;
+            inventory.IsPublic = vm.IsPublic;
+
+            try
+            {
+                _context.Entry(inventory).Property(i => i.Version).OriginalValue = vm.Version;
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                ModelState.AddModelError(string.Empty, "This inventory was modified by someone else. Please reload and try again.");
+                return View(vm);
+            }
+
+            return RedirectToAction(nameof(Details), new { id = vm.Id });
+        }
     }
 }
