@@ -1,3 +1,11 @@
+@using InventoryManager.Models.Domain
+@inject Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> UserManager
+
+@{
+    var themeUser = await UserManager.GetUserAsync(User);
+    var theme = InventoryManager.Helpers.ThemeHelper.Resolve(themeUser?.Theme);
+    var cssFile = InventoryManager.Helpers.ThemeHelper.GetCssFile(theme);
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,11 +13,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - InventoryManager</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/@cssFile" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/InventoryManager.styles.css" asp-append-version="true" />
 </head>
 <body>
     <header>
+        <div class="container-fluid bg-white border-bottom shadow-sm py-1 d-flex justify-content-end align-items-center">
+             @if (User.Identity?.IsAuthenticated == true)
+             {
+                 <form asp-controller="Profile" asp-action="SetTheme" method="post" class="d-inline">
+                     @Html.AntiForgeryToken()
+                     <input type="hidden" name="theme" value="@(theme == "dark" ? "light" : "dark")" />
+                     <button type="submit" class="btn btn-sm btn-outline-secondary me-2">
+                         @(theme == "dark" ? "☀️ Light Mode" : "🌙 Dark Mode")
+                     </button>
+                 </form>
+             }
+        </div>
         <partial name="_Navbar" />
     </header>
     <div class="container">
@@ -26,7 +47,6 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-    <script src="~/js/item-like.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

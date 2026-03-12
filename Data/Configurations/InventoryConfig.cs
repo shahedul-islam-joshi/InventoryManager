@@ -22,7 +22,7 @@ namespace InventoryManager.Data.Configurations
             builder.HasOne(i => i.Owner)
                    .WithMany()
                    .HasForeignKey(i => i.OwnerId)
-                   .OnDelete(DeleteBehavior.SetNull);
+                   .OnDelete(DeleteBehavior.Restrict);
 
             // Index on OwnerId for fast "my inventories" queries
             builder.HasIndex(i => i.OwnerId);

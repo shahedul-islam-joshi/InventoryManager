@@ -58,7 +58,13 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 builder.Services.AddControllersWithViews()
     .AddViewLocalization()
     .AddDataAnnotationsLocalization();
-    
+
+builder.Services.AddAntiforgery(options =>
+{
+    // The AJAX script (like.js) sends the token in this header
+    options.HeaderName = "RequestVerificationToken";
+});
+
 builder.Services.AddRazorPages();
 
 // Configure Localization
@@ -116,13 +122,16 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-// Apply Localization before Routing
-app.UseRequestLocalization();
+// Apply Localization before Routing with extracted options
+var locOptions = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<Microsoft.AspNetCore.Builder.RequestLocalizationOptions>>().Value;
+app.UseRequestLocalization(locOptions);
+
 app.UseRouting();
 
 app.UseAuthentication();
 // Order is critical: Custom middleware must be after Auth and before AuthZ
 app.UseMiddleware<InventoryManager.Middleware.BlockedUserMiddleware>();
+app.UseMiddleware<InventoryManager.Middleware.RequestCultureMiddleware>();
 app.UseAuthorization();
 
 app.MapControllerRoute(

@@ -17,6 +17,9 @@ namespace InventoryManager.Helpers
             if (string.IsNullOrEmpty(userId))
                 return false;
 
+            if (string.IsNullOrEmpty(inventory.OwnerId))
+                return false;
+
             return inventory.OwnerId == userId;
         }
     }

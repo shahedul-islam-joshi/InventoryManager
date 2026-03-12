@@ -173,31 +173,31 @@ namespace InventoryManager.Controllers
         public async Task<IActionResult> ToggleLike([FromBody] LikeRequest request)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            var item = await _context.Items.Include(i => i.ItemLikes).FirstOrDefaultAsync(i => i.Id == request.ItemId);
 
-            if (item == null) return NotFound();
+            var itemExists = await _context.Items.AnyAsync(i => i.Id == request.ItemId);
+            if (!itemExists) return NotFound();
 
-            var existingLike = item.ItemLikes.FirstOrDefault(l => l.UserId == userId);
+            var existingLike = await _context.ItemLikes
+                .FirstOrDefaultAsync(l => l.ItemId == request.ItemId && l.UserId == userId);
 
             if (existingLike == null)
             {
-                // Like it!
-                item.ItemLikes.Add(new ItemLike
+                _context.ItemLikes.Add(new ItemLike
                 {
                     Id = Guid.NewGuid(),
-                    ItemId = item.Id,
+                    ItemId = request.ItemId,
                     UserId = userId
                 });
             }
             else
             {
-                // Unlike it!
                 _context.ItemLikes.Remove(existingLike);
             }
 
             await _context.SaveChangesAsync();
 
-            return Json(new { likes = item.ItemLikes.Count });
+            var likeCount = await _context.ItemLikes.CountAsync(l => l.ItemId == request.ItemId);
+            return Json(new { likes = likeCount });
         }
     }
 

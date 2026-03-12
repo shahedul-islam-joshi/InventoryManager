@@ -1,4 +1,4 @@
-﻿@model InventoryManager.Models.ViewModels.InventoryDetailsViewModel
+@model InventoryManager.Models.ViewModels.InventoryDetailsViewModel
 @using InventoryManager.Models.ViewModels
 
 @{
@@ -159,10 +159,8 @@
     The layout's @await RenderSectionAsync("Scripts", required: false) renders this block.
 *@
 @section Scripts {
-    @* SignalR JavaScript client — loaded from CDN, no local copy required *@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"
-            integrity="sha512-O9LCEFBnkSBqhqBWHBBCkSzFBGDEFMYfXQHBFRaOhvSFQjFMHpFKBrSdVlMUBssHSGMBMBbJFLFpBDXFMqbQ=="
             crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    @* Discussion real-time logic *@
     <script src="~/js/discussion-signalr.js" asp-append-version="true"></script>
+    <script src="~/js/like.js" asp-append-version="true"></script>
 }

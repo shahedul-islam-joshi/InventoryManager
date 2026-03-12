@@ -1,4 +1,5 @@
 using InventoryManager.Data;
+using InventoryManager.Helpers;
 using InventoryManager.Models.Domain;
 using InventoryManager.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -59,6 +60,30 @@ namespace InventoryManager.Controllers
             };
 
             return View(vm);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SetTheme(string theme)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user != null)
+            {
+                user.Theme = ThemeHelper.Resolve(theme);
+                await _userManager.UpdateAsync(user);
+            }
+            return Redirect(Request.Headers["Referer"].ToString() ?? "/");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SetLanguage(string language)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user != null)
+            {
+                user.Language = LocalizationHelper.Resolve(language);
+                await _userManager.UpdateAsync(user);
+            }
+            return Redirect(Request.Headers["Referer"].ToString() ?? "/");
         }
     }
 }
