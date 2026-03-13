@@ -1,17 +1,17 @@
 namespace InventoryManager.Models.DTOs
 {
     // WHY A DTO?
-    // The domain entity (DiscussionPost) is an EF model — it may have navigation
-    // properties and fields the client doesn't need (e.g. UserId, InventoryId).
-    // Sending the raw entity over SignalR risks:
-    //   1. Exposing internal IDs unnecessarily.
-    //   2. Circular reference issues if navigation properties are added later.
-    // The DTO is a clean, minimal contract between server and browser.
+    // The domain entity (DiscussionPost) is an EF model that may have navigation
+    // properties we don't want to send over the wire (e.g. InventoryId, the full
+    // user graph). The DTO is a clean, minimal contract between server and browser.
     public class DiscussionPostDto
     {
         public Guid Id { get; set; }
 
-        // Display name — safe to expose to the client
+        // UserId is included so the client can build a link to the author's profile page.
+        public string UserId { get; set; } = string.Empty;
+
+        // Display name — rendered as the link text in the discussion UI
         public string UserName { get; set; } = string.Empty;
 
         public string Content { get; set; } = string.Empty;

@@ -38,6 +38,7 @@ namespace InventoryManager.Services
                 .Select(p => new DiscussionPostDto
                 {
                     Id = p.Id,
+                    UserId = p.UserId,
                     UserName = p.UserName,
                     Content = p.Content,
                     CreatedAt = p.CreatedAt
@@ -78,6 +79,7 @@ namespace InventoryManager.Services
             return new DiscussionPostDto
             {
                 Id = post.Id,
+                UserId = post.UserId,
                 UserName = post.UserName,
                 Content = post.Content,
                 CreatedAt = post.CreatedAt

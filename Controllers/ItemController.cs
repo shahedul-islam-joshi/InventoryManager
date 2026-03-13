@@ -166,6 +166,51 @@ namespace InventoryManager.Controllers
             return RedirectToAction("Details", "Inventory", new { id = item.InventoryId });
         }
 
+        // -----------------------------------------------------------------------
+        // POST: Item/DeleteMultiple
+        // Bulk-deletes items whose IDs are posted from the checkbox toolbar in
+        // _ItemsTab.cshtml.  The form sends one hidden input named "ids" per
+        // selected row, which ASP.NET Core model-binds as List<Guid>.
+        //
+        // WHY VERIFY ACCESS PER INVENTORY?
+        // A crafted POST could mix IDs from inventories the user cannot edit.
+        // We verify access for every distinct inventoryId in the batch so there
+        // is no way to bypass the permission check by bundling foreign IDs.
+        // -----------------------------------------------------------------------
+        [HttpPost]
+        public IActionResult DeleteMultiple(List<Guid> ids)
+        {
+            if (ids == null || ids.Count == 0)
+                return RedirectToAction("Index", "Inventory");
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+            // Load all matching items in one query
+            var items = _context.Items
+                .Where(i => ids.Contains(i.Id))
+                .ToList();
+
+            if (items.Count == 0)
+                return RedirectToAction("Index", "Inventory");
+
+            // Verify write access for every distinct parent inventory in the selection
+            var distinctInventoryIds = items.Select(i => i.InventoryId).Distinct();
+            foreach (var invId in distinctInventoryIds)
+            {
+                if (!_accessService.CanEditItems(invId, userId))
+                    return Forbid();
+            }
+
+            // All access checks passed — delete the items
+            _context.Items.RemoveRange(items);
+            _context.SaveChanges();
+
+            // Redirect to the first item's inventory (all items share one inventory
+            // in the normal UI flow; the loop above handles the edge case anyway)
+            var redirectInventoryId = items.First().InventoryId;
+            return RedirectToAction("Details", "Inventory", new { id = redirectInventoryId });
+        }
+
         // POST: Item/ToggleLike
         // Toggles a like for an item for the current logged-in user.
         // Returns the updated like count as JSON.

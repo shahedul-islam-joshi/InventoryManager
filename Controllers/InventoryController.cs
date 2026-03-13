@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using InventoryManager.Data;
@@ -7,6 +7,7 @@ using InventoryManager.Models.ViewModels;
 using InventoryManager.Services.Interfaces;
 using InventoryManager.Helpers;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Identity;
 
 namespace InventoryManager.Controllers
 {
@@ -20,14 +21,16 @@ namespace InventoryManager.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IAccessService _accessService;
         private readonly IDiscussionService _discussionService;
+        private readonly UserManager<ApplicationUser> _userManager;
 
         // IAccessService is injected — the controller never instantiates it directly.
         // This follows the Dependency Inversion principle and keeps the controller testable.
-        public InventoryController(ApplicationDbContext context, IAccessService accessService, IDiscussionService discussionService)
+        public InventoryController(ApplicationDbContext context, IAccessService accessService, IDiscussionService discussionService, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _accessService = accessService;
             _discussionService = discussionService;
+            _userManager = userManager;
         }
 
         [HttpGet]
@@ -53,6 +56,17 @@ namespace InventoryManager.Controllers
 
             // PermissionHelper.IsOwner keeps the ownership check in one place
             bool isOwner = PermissionHelper.IsOwner(inventory, userId);
+
+            // ADMINS ACT AS OWNERS:
+            // High-privilege users must see the inventory exactly as the owner does.
+            if (!isOwner)
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user != null && await _userManager.IsInRoleAsync(user, "Admin"))
+                {
+                    isOwner = true;
+                }
+            }
 
             // CanEditItems delegates to AccessService — owner OR granted user returns true
             bool canEdit = _accessService.CanEditItems(inventory.Id, userId);
@@ -257,6 +271,66 @@ namespace InventoryManager.Controllers
             }
 
             return RedirectToAction(nameof(Details), new { id = vm.Id });
+        }
+        // -----------------------------------------------------------------------
+        // POST: Inventory/AutoSave
+        // Background auto-save endpoint called by inventory-autosave.js.
+        //
+        // Returns:
+        //   200 OK  { version: "<base64 rowversion>" }  — save succeeded
+        //   409 Conflict                                — optimistic lock failure
+        //   400 Bad Request                             — model invalid
+        //   403 Forbidden                               — not the owner
+        //
+        // WHY RETURN THE NEW version?
+        // EF rowversion is updated by the database on every write.
+        // The JS must store the latest value and send it on the next auto-save,
+        // otherwise every subsequent call would look like a stale-data conflict.
+        //
+        // WHY VALIDATE ANTIFORGERY TOKEN?
+        // AutoSave is a mutating POST endpoint. Without this attribute a CSRF
+        // attack could silently overwrite inventory data.
+        // -----------------------------------------------------------------------
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AutoSave(InventoryManager.Models.ViewModels.InventoryEditVM vm)
+        {
+            // Remove Tags from model state — the auto-save JS does not send it,
+            // so model binding leaves it null, which would fail Required-like checks.
+            ModelState.Remove(nameof(vm.Tags));
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var inventory = await _context.Inventories.FirstOrDefaultAsync(i => i.Id == vm.Id);
+            if (inventory == null) return NotFound();
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            if (!PermissionHelper.IsOwner(inventory, userId)) return Forbid();
+
+            inventory.Title       = vm.Title;
+            inventory.Description = vm.Description;
+            inventory.Category    = vm.Category;
+            inventory.ImageUrl    = vm.ImageUrl;
+            inventory.IsPublic    = vm.IsPublic;
+
+            try
+            {
+                // Apply the rowversion from the client so EF can detect if another
+                // save happened between the page load and this auto-save request.
+                _context.Entry(inventory).Property(i => i.Version).OriginalValue = vm.Version;
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // 409 tells the JS to stop auto-saving and display the conflict message
+                return Conflict();
+            }
+
+            // Return the new rowversion as a base64 string so the JS can update
+            // the hidden Version field for the next auto-save cycle.
+            var newVersion = Convert.ToBase64String(inventory.Version!);
+            return Ok(new { version = newVersion });
         }
     }
 }

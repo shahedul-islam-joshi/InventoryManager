@@ -2,23 +2,53 @@
 
 @if (Model.Items.Any())
 {
-    <table class="table table-striped">
+    @* ------------------------------------------------------------------ *@
+    @* Toolbar: only shown when CanEdit AND at least one checkbox is ticked *@
+    @* ------------------------------------------------------------------ *@
+    @if (Model.CanEdit)
+    {
+        <div id="items-toolbar" style="display:none; margin-bottom:0.75rem;">
+            <form id="delete-selected-form"
+                  asp-controller="Item" asp-action="DeleteMultiple"
+                  method="post">
+                @* Hidden inputs are injected by JS when the form is submitted *@
+                <button type="submit" class="btn btn-danger btn-sm"
+                        onclick="return injectSelectedIds();">
+                    🗑 Delete Selected
+                </button>
+            </form>
+        </div>
+    }
+
+    <table class="table table-striped" id="items-table">
         <thead>
             <tr>
+                @if (Model.CanEdit)
+                {
+                    <th style="width:2.5rem;">
+                        @* Select-all checkbox in the header *@
+                        <input type="checkbox" id="select-all-items"
+                               title="Select all" />
+                    </th>
+                }
                 <th>Name</th>
                 <th>Description</th>
                 <th>Created At</th>
                 <th>Likes</th>
-                @if (Model.CanEdit)
-                {
-                    <th>Actions</th>
-                }
             </tr>
         </thead>
         <tbody>
             @foreach (var item in Model.Items)
             {
                 <tr>
+                    @if (Model.CanEdit)
+                    {
+                        <td>
+                            <input type="checkbox"
+                                   class="item-checkbox"
+                                   value="@item.Id" />
+                        </td>
+                    }
                     <td>@item.Name</td>
                     <td>@item.Description</td>
                     <td>@item.CreatedAt.ToShortDateString()</td>
@@ -30,19 +60,6 @@
                             @item.ItemLikes.Count
                         </span>
                     </td>
-                    @if (Model.CanEdit)
-                    {
-                        <td>
-                            <form asp-controller="Item" asp-action="Delete"
-                                  asp-route-id="@item.Id"
-                                  method="post" style="display:inline;">
-                                <button type="submit" class="btn btn-danger btn-sm"
-                                        onclick="return confirm('Delete this item?');">
-                                    Delete
-                                </button>
-                            </form>
-                        </td>
-                    }
                 </tr>
             }
         </tbody>
@@ -51,4 +68,69 @@
 else
 {
     <p>No items found for this inventory.</p>
+}
+
+@if (Model.CanEdit)
+{
+    <script>
+        (function () {
+            var toolbar       = document.getElementById('items-toolbar');
+            var selectAll     = document.getElementById('select-all-items');
+            var form          = document.getElementById('delete-selected-form');
+
+            // Show / hide the toolbar whenever checkbox state changes
+            function updateToolbar() {
+                var checked = document.querySelectorAll('.item-checkbox:checked');
+                toolbar.style.display = checked.length > 0 ? 'block' : 'none';
+            }
+
+            // Select-all header checkbox
+            if (selectAll) {
+                selectAll.addEventListener('change', function () {
+                    document.querySelectorAll('.item-checkbox').forEach(function (cb) {
+                        cb.checked = selectAll.checked;
+                    });
+                    updateToolbar();
+                });
+            }
+
+            // Individual row checkboxes
+            document.querySelectorAll('.item-checkbox').forEach(function (cb) {
+                cb.addEventListener('change', function () {
+                    // Sync the header checkbox state
+                    var all  = document.querySelectorAll('.item-checkbox');
+                    var done = document.querySelectorAll('.item-checkbox:checked');
+                    if (selectAll) {
+                        selectAll.indeterminate = done.length > 0 && done.length < all.length;
+                        selectAll.checked       = done.length === all.length;
+                    }
+                    updateToolbar();
+                });
+            });
+
+            // Inject hidden <input name="ids"> elements before form submission
+            window.injectSelectedIds = function () {
+                // Remove any previously injected inputs to avoid duplicates
+                form.querySelectorAll('input[name="ids"]').forEach(function (el) {
+                    el.remove();
+                });
+
+                var checked = document.querySelectorAll('.item-checkbox:checked');
+                if (checked.length === 0) {
+                    alert('Please select at least one item.');
+                    return false;
+                }
+
+                checked.forEach(function (cb) {
+                    var hidden = document.createElement('input');
+                    hidden.type  = 'hidden';
+                    hidden.name  = 'ids';
+                    hidden.value = cb.value;
+                    form.appendChild(hidden);
+                });
+
+                return confirm('Delete ' + checked.length + ' selected item(s)?');
+            };
+        })();
+    </script>
 }

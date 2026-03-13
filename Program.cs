@@ -55,6 +55,40 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
+// ==========================================
+// 2b. EXTERNAL AUTHENTICATION PROVIDERS
+// ==========================================
+// Providers are only registered when credentials are present so the app
+// starts cleanly with empty appsettings values (e.g. a fresh clone).
+// Set real values with:
+//   dotnet user-secrets set "Authentication:Google:ClientId"     "<value>"
+//   dotnet user-secrets set "Authentication:Google:ClientSecret" "<value>"
+//   dotnet user-secrets set "Authentication:Facebook:AppId"      "<value>"
+//   dotnet user-secrets set "Authentication:Facebook:AppSecret"  "<value>"
+var authBuilder = builder.Services.AddAuthentication();
+
+var googleClientId     = builder.Configuration["Authentication:Google:ClientId"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
+{
+    authBuilder.AddGoogle(options =>
+    {
+        options.ClientId     = googleClientId;
+        options.ClientSecret = googleClientSecret;
+    });
+}
+
+var facebookAppId     = builder.Configuration["Authentication:Facebook:AppId"];
+var facebookAppSecret = builder.Configuration["Authentication:Facebook:AppSecret"];
+if (!string.IsNullOrEmpty(facebookAppId) && !string.IsNullOrEmpty(facebookAppSecret))
+{
+    authBuilder.AddFacebook(options =>
+    {
+        options.AppId     = facebookAppId;
+        options.AppSecret = facebookAppSecret;
+    });
+}
+
 builder.Services.AddControllersWithViews()
     .AddViewLocalization()
     .AddDataAnnotationsLocalization();

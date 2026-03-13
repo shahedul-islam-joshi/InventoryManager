@@ -31,22 +31,40 @@ namespace InventoryManager.Services
         // CanEditInventory
         // Determines whether a user may edit inventory-level settings.
         //
-        // RULE: Owner is always allowed (checked via PermissionHelper).
-        //       Otherwise, check the InventoryAccess table for an explicit grant.
+        // Check order:
+        //   1. Is owner              → always allowed
+        //   2. Is admin              → always allowed
+        //   3. Inventory is public AND user is authenticated → allowed
+        //   4. Has explicit access grant in InventoryAccess table → allowed
+        //   Otherwise               → denied
         // -----------------------------------------------------------------------
         public bool CanEditInventory(Guid inventoryId, string userId)
         {
-            // Fetch the inventory to check ownership
+            // Fetch the inventory to check ownership and visibility
             var inventory = _context.Inventories.FirstOrDefault(i => i.Id == inventoryId);
             if (inventory == null) return false;
 
-            // WHY OWNER IS ALWAYS ALLOWED:
+            // 1. OWNER IS ALWAYS ALLOWED:
             // The owner created the inventory and is its ultimate authority.
             // This check must come first so the owner is never accidentally locked out.
             if (PermissionHelper.IsOwner(inventory, userId))
                 return true;
 
-            // Check if an explicit access grant exists for this user
+            // 2. ADMINS ACT AS OWNERS:
+            // High-privilege users must have full access to every inventory.
+            var user = _userManager.FindByIdAsync(userId).GetAwaiter().GetResult();
+            if (user != null && _userManager.IsInRoleAsync(user, "Admin").GetAwaiter().GetResult())
+                return true;
+
+            // 3. PUBLIC INVENTORY + AUTHENTICATED USER:
+            // Any logged-in user may write to a public inventory.
+            // We verify authentication by ensuring userId is non-null/non-empty,
+            // which is only true when the request carries a valid identity cookie.
+            if (inventory.IsPublic && !string.IsNullOrEmpty(userId))
+                return true;
+
+            // 4. EXPLICIT ACCESS GRANT:
+            // Check the InventoryAccess table for a per-user grant.
             return _context.InventoryAccesses
                 .Any(a => a.InventoryId == inventoryId && a.UserId == userId);
         }

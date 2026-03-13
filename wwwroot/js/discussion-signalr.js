@@ -40,10 +40,10 @@
     // Called by the server when a new message is broadcast to this group.
     // Appends the message to the DOM without a page refresh.
     //
-    // dto shape: { id, userName, content, createdAt }
+    // dto shape: { id, userId, userName, content, createdAt }
     // -----------------------------------------------------------------------
     connection.on('receiveMessage', function (dto) {
-        appendMessage(dto.userName, dto.content, dto.createdAt);
+        appendMessage(dto.userId, dto.userName, dto.content, dto.createdAt);
     });
 
     // -----------------------------------------------------------------------
@@ -97,16 +97,24 @@
     // -----------------------------------------------------------------------
     // appendMessage
     // Creates a message card and appends it to the message list.
+    //
+    // WHY marked.parse() FOR CONTENT BUT escapeHtml() FOR userName / userId?
+    // content is intentional Markdown written by the user, so we want
+    // formatted HTML output. marked.parse() handles that.
+    // userName and userId go into href/text positions inside innerHTML, so
+    // they are escaped first to prevent attribute-injection XSS.
     // -----------------------------------------------------------------------
-    function appendMessage(userName, content, createdAt) {
+    function appendMessage(userId, userName, content, createdAt) {
         const time = new Date(createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         const item = document.createElement('div');
         item.className = 'mb-2 p-2 border rounded bg-light';
         item.innerHTML =
-            '<strong class="text-primary">' + escapeHtml(userName) + '</strong>' +
+            '<strong class="text-primary">' +
+                '<a href="/Profile/Index/' + escapeHtml(userId) + '">' + escapeHtml(userName) + '</a>' +
+            '</strong>' +
             ' <small class="text-muted">' + time + '</small>' +
-            '<div>' + escapeHtml(content) + '</div>';
+            '<div>' + marked.parse(content) + '</div>';
 
         messageList.appendChild(item);
 
