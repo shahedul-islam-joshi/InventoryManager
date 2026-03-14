@@ -1,9 +1,28 @@
-# InventoryManager
+# 📦 InventoryManager
+
+<p align="center">
+  <b>Multi-User Collaborative Inventory Management Platform</b>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/STATUS-LIVE--PRODUCTION-brightgreen?style=for-the-badge&logo=checkmarx&logoColor=white" alt="Status"/>
+  <img src="https://img.shields.io/badge/.NET-8.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET 8"/>
+  <img src="https://img.shields.io/badge/ASP.NET_Core-MVC-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt="ASP.NET Core MVC"/>
+  <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL"/>
+  <img src="https://img.shields.io/badge/SignalR-REAL--TIME-FF6F00?style=for-the-badge&logo=microsoftsqlserver&logoColor=white" alt="SignalR"/>
+  <img src="https://img.shields.io/badge/Bootstrap-5-7952B3?style=for-the-badge&logo=bootstrap&logoColor=white" alt="Bootstrap 5"/>
+  <img src="https://img.shields.io/badge/Docker-READY-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"/>
+  <img src="https://img.shields.io/badge/LICENSE-MIT-lightgrey?style=for-the-badge" alt="MIT License"/>
+</p>
+
+---
 
 A full-featured, multi-user inventory management web application built with **ASP.NET Core MVC**, **PostgreSQL**, **SignalR**, and **Bootstrap**. Users can create personal or shared inventories, define custom fields per inventory, manage items collaboratively, discuss in real-time, and control access granularly.
 
 **Live Demo:** https://inventory-manager-reta.onrender.com
 **Repository:** https://github.com/shahedul-islam-joshi/InventoryManager
+
+> **Performance Tip:** This project is hosted on a **Render Free Tier**. If the link takes about 30 seconds to load initially, the server is simply "waking up" from its sleep cycle. Once active, SignalR provides real-time responses. ⚡
 
 ---
 
