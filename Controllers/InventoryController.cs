@@ -332,5 +332,168 @@ namespace InventoryManager.Controllers
             var newVersion = Convert.ToBase64String(inventory.Version!);
             return Ok(new { version = newVersion });
         }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportCsv(Guid id)
+        {
+            var inventory = await _context.Inventories
+                .Include(i => i.Fields)
+                .FirstOrDefaultAsync(m => m.Id == id);
+            
+            if (inventory == null) return NotFound();
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            bool isOwner = PermissionHelper.IsOwner(inventory, userId);
+            if (!isOwner)
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user != null && await _userManager.IsInRoleAsync(user, "Admin"))
+                {
+                    isOwner = true;
+                }
+            }
+            bool canRead = inventory.IsPublic || isOwner || _accessService.CanEditItems(inventory.Id, userId);
+            if (!canRead) return Forbid();
+
+            var items = await _context.Items
+                .Include(i => i.Inventory)
+                .ThenInclude(inv => inv!.InventoryTags)
+                .ThenInclude(it => it.Tag)
+                .Include(i => i.ItemLikes)
+                .Where(i => i.InventoryId == id)
+                .OrderByDescending(i => i.CreatedAt)
+                .ToListAsync();
+
+            var fields = inventory.Fields.OrderBy(f => f.Order).ToList();
+
+            using var memoryStream = new System.IO.MemoryStream();
+            using var writer = new System.IO.StreamWriter(memoryStream);
+            using var csv = new CsvHelper.CsvWriter(writer, System.Globalization.CultureInfo.InvariantCulture);
+
+            csv.WriteField("ID");
+            csv.WriteField("Name");
+            csv.WriteField("Description");
+            foreach (var field in fields)
+            {
+                csv.WriteField(field.Title);
+            }
+            csv.WriteField("Tags");
+            csv.WriteField("Likes");
+            csv.WriteField("Created At");
+            csv.NextRecord();
+
+            foreach (var item in items)
+            {
+                csv.WriteField(item.CustomId ?? item.Id.ToString());
+                csv.WriteField(item.Name);
+                csv.WriteField(item.Description);
+
+                foreach (var field in fields)
+                {
+                    string? value = field.FieldType switch
+                    {
+                        "Text" => field.SlotIndex == 1 ? item.Text1 : field.SlotIndex == 2 ? item.Text2 : item.Text3,
+                        "Number" => field.SlotIndex == 1 ? item.Number1?.ToString() : field.SlotIndex == 2 ? item.Number2?.ToString() : item.Number3?.ToString(),
+                        "Bool" => field.SlotIndex == 1 ? item.Bool1?.ToString() : field.SlotIndex == 2 ? item.Bool2?.ToString() : item.Bool3?.ToString(),
+                        "Date" => field.SlotIndex == 1 ? item.Date1?.ToString("yyyy-MM-dd") : field.SlotIndex == 2 ? item.Date2?.ToString("yyyy-MM-dd") : item.Date3?.ToString("yyyy-MM-dd"),
+                        _ => ""
+                    };
+                    csv.WriteField(value ?? "");
+                }
+
+                var tags = string.Join(", ", item.Inventory?.InventoryTags.Select(it => it.Tag.Name) ?? Array.Empty<string>());
+                csv.WriteField(tags);
+                csv.WriteField(item.ItemLikes.Count.ToString());
+                csv.WriteField(item.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+                csv.NextRecord();
+            }
+
+            writer.Flush();
+            return File(memoryStream.ToArray(), "text/csv", $"Inventory_{inventory.Title}_Items.csv");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportExcel(Guid id)
+        {
+            var inventory = await _context.Inventories
+                .Include(i => i.Fields)
+                .FirstOrDefaultAsync(m => m.Id == id);
+            
+            if (inventory == null) return NotFound();
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            bool isOwner = PermissionHelper.IsOwner(inventory, userId);
+            if (!isOwner)
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user != null && await _userManager.IsInRoleAsync(user, "Admin"))
+                {
+                    isOwner = true;
+                }
+            }
+            bool canRead = inventory.IsPublic || isOwner || _accessService.CanEditItems(inventory.Id, userId);
+            if (!canRead) return Forbid();
+
+            var items = await _context.Items
+                .Include(i => i.Inventory)
+                .ThenInclude(inv => inv!.InventoryTags)
+                .ThenInclude(it => it.Tag)
+                .Include(i => i.ItemLikes)
+                .Where(i => i.InventoryId == id)
+                .OrderByDescending(i => i.CreatedAt)
+                .ToListAsync();
+
+            var fields = inventory.Fields.OrderBy(f => f.Order).ToList();
+
+            using var workbook = new ClosedXML.Excel.XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Items");
+
+            int col = 1;
+            worksheet.Cell(1, col++).Value = "ID";
+            worksheet.Cell(1, col++).Value = "Name";
+            worksheet.Cell(1, col++).Value = "Description";
+            foreach (var field in fields)
+            {
+                worksheet.Cell(1, col++).Value = field.Title;
+            }
+            worksheet.Cell(1, col++).Value = "Tags";
+            worksheet.Cell(1, col++).Value = "Likes";
+            worksheet.Cell(1, col++).Value = "Created At";
+
+            int row = 2;
+            foreach (var item in items)
+            {
+                col = 1;
+                worksheet.Cell(row, col++).Value = item.CustomId ?? item.Id.ToString();
+                worksheet.Cell(row, col++).Value = item.Name;
+                worksheet.Cell(row, col++).Value = item.Description;
+
+                foreach (var field in fields)
+                {
+                    string? value = field.FieldType switch
+                    {
+                        "Text" => field.SlotIndex == 1 ? item.Text1 : field.SlotIndex == 2 ? item.Text2 : item.Text3,
+                        "Number" => field.SlotIndex == 1 ? item.Number1?.ToString() : field.SlotIndex == 2 ? item.Number2?.ToString() : item.Number3?.ToString(),
+                        "Bool" => field.SlotIndex == 1 ? item.Bool1?.ToString() : field.SlotIndex == 2 ? item.Bool2?.ToString() : item.Bool3?.ToString(),
+                        "Date" => field.SlotIndex == 1 ? item.Date1?.ToString("yyyy-MM-dd") : field.SlotIndex == 2 ? item.Date2?.ToString("yyyy-MM-dd") : item.Date3?.ToString("yyyy-MM-dd"),
+                        _ => ""
+                    };
+                    worksheet.Cell(row, col++).Value = value ?? "";
+                }
+
+                var tags = string.Join(", ", item.Inventory?.InventoryTags.Select(it => it.Tag.Name) ?? Array.Empty<string>());
+                worksheet.Cell(row, col++).Value = tags;
+                worksheet.Cell(row, col++).Value = item.ItemLikes.Count;
+                worksheet.Cell(row, col++).Value = item.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss");
+
+                row++;
+            }
+
+            worksheet.Columns().AdjustToContents();
+
+            using var memoryStream = new System.IO.MemoryStream();
+            workbook.SaveAs(memoryStream);
+            return File(memoryStream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Inventory_{inventory.Title}_Items.xlsx");
+        }
     }
 }

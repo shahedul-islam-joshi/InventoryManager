@@ -8,6 +8,15 @@
 
 @* Inventory header information *@
 <h1>@Model.Inventory.Title</h1>
+
+@if (Model.Inventory.IsPublic || Model.IsOwner || Model.CanEdit)
+{
+    <div class="mb-3">
+        <a asp-action="ExportCsv" asp-route-id="@Model.Inventory.Id" class="btn btn-sm btn-outline-secondary">Export CSV</a>
+        <a asp-action="ExportExcel" asp-route-id="@Model.Inventory.Id" class="btn btn-sm btn-outline-secondary">Export Excel</a>
+    </div>
+}
+
 @Html.AntiForgeryToken()
 
 <div>
