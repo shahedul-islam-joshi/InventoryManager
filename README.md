@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="https://img.icons8.com/emoji/64/package-emoji.png" alt="icon" width="60"/>
-</p>
+
 
 <h1 align="center">InventoryManager</h1>
 
@@ -10,7 +8,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/STATUS-LIVE--PRODUCTION-00c853?style=for-the-badge&logo=checkmarx&logoColor=white"/>
-  <img src="https://img.shields.io/badge/.NET-8.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white"/>
+  <img src="https://img.shields.io/badge/.NET-10.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white"/>
   <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?style=for-the-badge&logo=postgresql&logoColor=white"/>
   <img src="https://img.shields.io/badge/SignalR-REAL--TIME-FF6F00?style=for-the-badge&logoColor=white"/>
   <img src="https://img.shields.io/badge/LICENSE-MIT-555555?style=for-the-badge"/>
@@ -213,116 +211,168 @@ Extends `IdentityUser` with:
 
 ```
 InventoryManager/
-├── Controllers/
-│   ├── AccountController.cs       # Register, Login, Logout, Social login, Email confirm
-│   ├── AdminController.cs         # User list, Block/Unblock, Role management
-│   ├── DiscussionController.cs    # Post message (REST fallback)
-│   ├── HomeController.cs          # Home page, top inventories
-│   ├── InventoryController.cs     # CRUD, Details, AutoSave, Export CSV/Excel
-│   ├── ItemController.cs          # CRUD, ToggleLike, DeleteMultiple
-│   ├── ProfileController.cs       # Profile view, SetTheme, SetLanguage
-│   └── SearchController.cs        # Full-text search
 │
-├── Services/
-│   ├── AccessService.cs           # CanEditInventory, CanEditItems, admin/public checks
-│   ├── CustomIdService.cs         # ID template rendering + sequence increment
-│   ├── DiscussionService.cs       # GetPostsAsync, AddPostAsync
-│   ├── InventoryService.cs        # GetAll, GetById, Create, Update, Delete
-│   ├── ItemService.cs             # CRUD with field validation
-│   ├── SearchService.cs           # Full-text search across inventories and items
-│   ├── StatisticsService.cs       # Item count, like count, top items
-│   ├── TagService.cs              # Tag CRUD, tag cloud, autocomplete
-│   └── EmailSender.cs             # IEmailSender implementation (SMTP)
+├── Controllers/                          # HTTP request handlers — thin, delegate to services
+│   ├── AccountController.cs              # Register, Login, Logout, social login callbacks, email confirmation
+│   ├── AdminController.cs                # Admin-only: user list, block/unblock, role management
+│   ├── DiscussionController.cs           # REST fallback for posting discussion messages
+│   ├── HomeController.cs                 # Home page with top inventories, Privacy page
+│   ├── InventoryController.cs            # Full inventory CRUD, Details tabbed view, AutoSave, CSV/Excel export
+│   ├── ItemController.cs                 # Item CRUD, ToggleLike (JSON), DeleteMultiple (checkbox batch)
+│   ├── ProfileController.cs              # User profile view, SetTheme POST, SetLanguage POST
+│   └── SearchController.cs              # Full-text search across inventories and items
 │
-├── Models/
-│   ├── ApplicationUser.cs
-│   ├── Inventory.cs
-│   ├── InventoryField.cs
-│   ├── FieldValidation.cs
-│   ├── FieldListOption.cs
-│   ├── Item.cs
-│   ├── ItemLike.cs
-│   ├── InventoryAccess.cs
-│   ├── DiscussionPost.cs
-│   ├── Tag.cs / InventoryTag.cs
-│   ├── InventorySequence.cs
-│   ├── IdElement.cs
-│   ├── Enums/FieldType.cs
-│   ├── DTOs/
-│   │   ├── DiscussionPostDto.cs
-│   │   ├── IdPreviewDto.cs
-│   │   └── TagAutocompleteDto.cs
-│   └── ViewModels/
-│       ├── InventoryDetailsViewModel.cs
-│       ├── InventoryCreateVM.cs / InventoryEditVM.cs
-│       ├── ItemCreateViewModel.cs / ItemEditVM.cs
-│       ├── ProfileVM.cs
-│       ├── AccessManageVM.cs
-│       ├── AdminUserVM.cs
-│       ├── SearchResultVM.cs
-│       └── DiscussionTabViewModel.cs
+├── Data/                                 # EF Core data access layer
+│   ├── ApplicationDbContext.cs           # DbContext — registers all entity sets and applies configurations
+│   └── Configurations/                  # Fluent API entity configurations (one file per entity)
+│       ├── IdElementConfig.cs            # Custom ID element template parts
+│       ├── InventoryAccessConfig.cs      # Unique constraint on (InventoryId, UserId)
+│       ├── InventoryConfig.cs            # OwnerId: DeleteBehavior.Restrict (prevents null on user delete)
+│       ├── InventoryFieldConfig.cs       # Field order index, FK cascade rules
+│       ├── InventorySequenceConfig.cs    # One sequence row per inventory for ID generation
+│       ├── ItemConfig.cs                 # [Timestamp] Version rowversion for optimistic concurrency
+│       ├── ItemLikeConfig.cs             # Unique constraint on (ItemId, UserId) — one like per user
+│       └── TagConfig.cs                  # Unique index on Tag.Name
+│
+├── Extensions/                           # Static extension methods for cleaner Program.cs
+│   ├── ApplicationBuilderExtensions.cs   # app.UseXxx() pipeline helpers
+│   ├── IdentityExtensions.cs             # Identity setup helpers (roles, seed admin)
+│   └── ServiceCollectionExtensions.cs    # builder.Services.AddXxx() registration helpers
+│
+├── Helpers/                              # Stateless utility classes
+│   ├── IdGeneratorHelper.cs              # Renders custom ID string from template + current sequence value
+│   ├── LocalizationHelper.cs             # Maps language code string → CultureInfo instance
+│   ├── MarkdownHelper.cs                 # Wraps Markdig: ToHtml(string markdown) → safe HTML string
+│   ├── PermissionHelper.cs               # IsOwner(inventory, userId) with null OwnerId guard
+│   └── ThemeHelper.cs                    # Resolve(string theme) → Bootstrap CSS file path
 │
 ├── Hubs/
-│   └── DiscussionHub.cs           # SignalR hub — JoinInventory, SendMessage
+│   └── DiscussionHub.cs                  # SignalR hub: JoinInventory(id), SendMessage(id, content) → broadcasts to group
 │
 ├── Middleware/
-│   ├── BlockedUserMiddleware.cs   # Redirects blocked users to /Account/Blocked
-│   └── RequestCultureMiddleware.cs # Sets culture from user.Language preference
+│   ├── BlockedUserMiddleware.cs          # Intercepts every request — redirects IsBlocked users to /Account/Blocked
+│   └── RequestCultureMiddleware.cs       # Reads user.Language from DB, sets Thread.CurrentCulture per request
 │
-├── Helpers/
-│   ├── IdGeneratorHelper.cs       # Renders custom ID from template + sequence
-│   ├── LocalizationHelper.cs      # Maps language code to CultureInfo
-│   ├── MarkdownHelper.cs          # Wraps Markdig: ToHtml(string markdown)
-│   ├── PermissionHelper.cs        # IsOwner(inventory, userId) with null guard
-│   └── ThemeHelper.cs             # Resolve(string theme) → Bootstrap CSS path
+├── Migrations/                           # EF Core auto-generated migration files
 │
-├── Data/
-│   ├── ApplicationDbContext.cs
-│   └── Configurations/
-│       ├── InventoryConfig.cs     # OwnerId: DeleteBehavior.Restrict
-│       ├── InventoryFieldConfig.cs
-│       ├── ItemConfig.cs
-│       ├── ItemLikeConfig.cs
-│       ├── InventoryAccessConfig.cs
-│       ├── TagConfig.cs
-│       ├── IdElementConfig.cs
-│       └── InventorySequenceConfig.cs
+├── Models/
+│   ├── Domain/                           # Core business entities (mapped to DB tables)
+│   │   ├── ApplicationUser.cs            # Extends IdentityUser — adds IsBlocked, Theme, Language
+│   │   ├── DiscussionPost.cs             # Per-inventory discussion message with Markdown content
+│   │   ├── IdElement.cs                  # One part of a custom ID template (prefix, counter, padding)
+│   │   ├── Inventory.cs                  # Root aggregate — Title, Description, IsPublic, OwnerId
+│   │   ├── InventoryAccess.cs            # Access grant record — UserId + CanEdit flag
+│   │   ├── InventoryField.cs             # Typed custom field definition scoped to an inventory
+│   │   ├── InventorySequence.cs          # Auto-increment counter per inventory for custom ID generation
+│   │   ├── InventoryTag.cs               # Junction table: many-to-many Inventory ↔ Tag
+│   │   ├── Item.cs                       # Inventory row — Name, CustomId, field values, [Timestamp] Version
+│   │   ├── ItemLike.cs                   # Like record — ItemId + UserId (unique pair)
+│   │   └── Tag.cs                        # Shared tag pool (unique Name) used across all inventories
+│   │
+│   ├── DTOs/                             # Lightweight transfer objects for service ↔ hub/controller communication
+│   │   ├── DiscussionPostDto.cs          # Post data sent to SignalR clients (UserId included for profile links)
+│   │   ├── IdPreviewDto.cs               # Preview of generated custom ID before saving
+│   │   └── TagAutocompleteDto.cs         # Tag suggestion for autocomplete dropdown
+│   │
+│   └── ViewModels/                       # View-specific data shapes passed from controllers to Razor views
+│       ├── AccessManageVM.cs             # Access tab: current grants + user search results
+│       ├── AdminUserVM.cs                # Admin panel: user row with role and blocked status
+│       ├── DiscussionTabViewModel.cs     # Discussion tab: existing posts + current user info
+│       ├── InventoryCreateVM.cs          # Create inventory form fields
+│       ├── InventoryDetailsViewModel.cs  # Full details page: inventory + items + tabs + permission flags
+│       ├── InventoryEditVM.cs            # Edit form with Version (rowversion) for optimistic locking
+│       ├── ItemCreateViewModel.cs        # Dynamic item create form bound to inventory's custom fields
+│       ├── ItemEditVM.cs                 # Item edit form with existing field values pre-populated
+│       ├── ProfileVM.cs                  # Profile page: owned inventories, liked items, access grants
+│       ├── SearchResultVM.cs             # Search results: matched inventories and items
+│       └── ErrorViewModel.cs            # Default MVC error page model
+│
+├── Resources/
+│   └── SharedResource.cs                 # Marker class for shared .resx localization strings
+│
+├── Services/
+│   ├── Interfaces/                       # Contracts — controllers depend on these, not concrete classes
+│   │   ├── IAccessService.cs             # CanEditInventory, CanEditItems, GetAccessList
+│   │   ├── ICustomIdService.cs           # GenerateId, PreviewId, SaveTemplate
+│   │   ├── IDiscussionService.cs         # GetPostsAsync, AddPostAsync
+│   │   ├── IInventoryService.cs          # GetAll, GetById, Create, Update, Delete
+│   │   ├── IItemService.cs               # GetItems, GetById, Create, Update, Delete, ValidateFields
+│   │   ├── ISearchService.cs             # Search(query, userId) → SearchResultVM
+│   │   ├── IStatisticsService.cs         # GetStats(inventoryId) → counts and top items
+│   │   └── ITagService.cs                # GetCloud, Autocomplete, AddTag, RemoveTag
+│   │
+│   ├── AccessService.cs                  # Permission checks: owner / admin role / IsPublic / explicit grant
+│   ├── CustomIdService.cs                # Renders ID template + atomically increments InventorySequence
+│   ├── DiscussionService.cs              # Persists posts, maps to DiscussionPostDto (includes UserId)
+│   ├── InventoryService.cs               # Inventory CRUD with tag sync and field management
+│   ├── ItemService.cs                    # Item CRUD with per-field validation against FieldValidation rules
+│   ├── SearchService.cs                  # Queries inventories + items filtered by access and search term
+│   ├── StatisticsService.cs              # Aggregates item count, like count, top-liked items
+│   └── TagService.cs                     # Tag cloud query, autocomplete endpoint, tag attach/detach
 │
 ├── Views/
-│   ├── Account/                   # Login, Register, RegisterConfirmation, ConfirmEmail
-│   ├── Admin/                     # User management table
-│   ├── Home/                      # Index (top inventories), Privacy
+│   ├── Account/
+│   │   ├── Login.cshtml                  # Form login + Google/Facebook social login buttons
+│   │   └── Register.cshtml               # Registration form; redirects to confirmation page if SMTP configured
+│   │
+│   ├── Admin/
+│   │   └── Index.cshtml                  # User management table: block/unblock, promote/demote
+│   │
+│   ├── Home/
+│   │   ├── Index.cshtml                  # Landing page with top-5 most liked public inventories
+│   │   └── Privacy.cshtml                # Privacy policy page
+│   │
 │   ├── Inventory/
-│   │   ├── Create.cshtml
-│   │   ├── Edit.cshtml            # With auto-save
-│   │   ├── Details.cshtml         # Tabbed layout, SignalR scripts
-│   │   ├── Index.cshtml
-│   │   ├── _ItemsTab.cshtml       # Checkbox multi-select + Delete Selected toolbar
-│   │   ├── _FieldsTab.cshtml      # Dynamic field editor with validation tuning
-│   │   ├── _DiscussionTab.cshtml  # Markdown-rendered posts, profile links
-│   │   ├── _AccessTab.cshtml      # Share inventory with users
-│   │   ├── _CustomIdTab.cshtml    # Custom ID template builder
-│   │   ├── _SettingsTab.cshtml    # Public/Private toggle, danger zone
-│   │   └── _StatisticsTab.cshtml  # Charts and counts
-│   ├── Item/                      # Create, Edit, Details, Index
-│   ├── Profile/                   # Index (sortable/filterable tables)
-│   ├── Search/                    # Results
-│   └── Shared/                    # _Layout.cshtml (theme injection), _LoginPartial
+│   │   ├── _AccessTab.cshtml             # Manage per-user access grants (search + grant/revoke)
+│   │   ├── _CustomIdTab.cshtml           # Custom ID template builder with live preview
+│   │   ├── _DiscussionTab.cshtml         # Real-time chat; Markdown-rendered posts; username → profile link
+│   │   ├── _FieldsTab.cshtml             # Dynamic field editor: add/remove fields, set type, tuning options
+│   │   ├── _ItemsTab.cshtml              # Items table with checkboxes + Delete Selected toolbar (no row buttons)
+│   │   ├── _SettingsTab.cshtml           # Public/Private toggle, rename, danger zone (delete inventory)
+│   │   ├── _StatisticsTab.cshtml         # Item count, like count, top items charts
+│   │   ├── Create.cshtml                 # New inventory form
+│   │   ├── Details.cshtml                # Tabbed detail page; loads SignalR + like.js + autosave scripts
+│   │   ├── Edit.cshtml                   # Edit form with hidden Version field for optimistic concurrency
+│   │   └── Index.cshtml                  # User's inventory list with search/filter
+│   │
+│   ├── Item/
+│   │   ├── Create.cshtml                 # Dynamic item form generated from inventory's custom fields
+│   │   └── Edit.cshtml                   # Pre-populated edit form with existing field values
+│   │
+│   ├── Profile/
+│   │   └── Index.cshtml                  # Owned inventories, liked items, access grants — all sortable/filterable
+│   │
+│   ├── Search/
+│   │   └── Results.cshtml                # Search results grouped by inventories and items
+│   │
+│   └── Shared/
+│       ├── Components/
+│       │   ├── InventoryTableViewComponent.cs   # Reusable inventory table rendered as a View Component
+│       │   └── TagCloudViewComponent.cs          # Tag cloud widget used on Home and Profile pages
+│       ├── _Layout.cshtml                # Master layout: injects theme CSS, navbar, login partial
+│       ├── _LoginPartial.cshtml          # Login/logout links in navbar
+│       ├── _Navbar.cshtml                # Top navigation bar with search box
+│       ├── _SearchBar.cshtml             # Reusable search input partial
+│       ├── _ValidationScriptsPartial.cshtml  # jQuery Validation scripts included on form pages
+│       └── Error.cshtml                  # Generic error page
 │
-├── wwwroot/
+├── wwwroot/                              # Static assets served directly by the web server
 │   ├── js/
-│   │   ├── discussion-signalr.js  # SignalR client, Markdown rendering, profile links
-│   │   ├── like.js                # Fetch POST to ToggleLike, update count
-│   │   ├── inventory-autosave.js  # Debounced auto-save with optimistic lock version
-│   │   ├── field-validation.js    # Client-side field tuning validation
-│   │   └── preview.js             # Image lightbox modal for item field previews
+│   │   ├── discussion-signalr.js         # SignalR client: connects, joins group, renders Markdown via Marked.js
+│   │   ├── like.js                       # Sends fetch POST to /Item/ToggleLike; updates like count in DOM
+│   │   ├── inventory-autosave.js         # Debounced 8s auto-save; handles optimistic lock Version field
+│   │   ├── field-validation.js           # Client-side field tuning validation (min/max/regex) before submit
+│   │   └── preview.js                    # Detects image/PDF URLs in item fields; renders thumbnails + lightbox
 │   └── css/
 │
-├── Migrations/
-├── Dockerfile
-├── appsettings.json
-├── appsettings.Development.json
-└── Program.cs
+├── .gitignore
+├── appsettings.json                      # Safe defaults — all secrets are empty strings
+├── appsettings.Development.json          # Local overrides (do not commit secrets)
+├── build_result.txt                      # CI build output log
+├── db_update_log.txt                     # Migration apply history log
+├── Dockerfile                            # Multi-stage build: sdk → aspnet runtime image
+├── Program.cs                            # App entry point: service registration, middleware pipeline, seed
+└── README.md
 ```
 
 ---
