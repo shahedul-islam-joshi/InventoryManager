@@ -27,13 +27,31 @@ namespace InventoryManager.Data
         public DbSet<IdElement> IdElements { get; set; }
         public DbSet<InventorySequence> InventorySequences { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        protected override void OnModelCreating(ModelBuilder builder)
         {
-            base.OnModelCreating(modelBuilder);
+            // 1. Keep the base call for Identity tables!
+            base.OnModelCreating(builder);
 
-            // Apply all IEntityTypeConfiguration<T> classes in this assembly automatically.
-            // This keeps OnModelCreating clean — each entity's mapping is in its own file.
-            modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+            // 2. FIX: InventoryTag Primary Key (Composite Key)
+            builder.Entity<InventoryTag>()
+                .HasKey(it => new { it.InventoryId, it.TagId });
+
+            // 3. FIX: InventorySequence (Ignore it if it's just for custom IDs)
+            builder.Ignore<InventorySequence>();
+
+            // 4. ENABLE: Cascade Delete for Users -> Inventories
+            builder.Entity<Inventory>()
+                .HasOne(i => i.Owner)
+                .WithMany(u => u.Inventories)
+                .HasForeignKey(i => i.OwnerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // 5. ENABLE: Cascade Delete for Inventories -> Items
+            builder.Entity<Item>()
+                .HasOne(i => i.Inventory)
+                .WithMany(inv => inv.Items)
+                .HasForeignKey(i => i.InventoryId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

@@ -221,6 +221,7 @@ using (var scope = app.Services.CreateScope())
                 await userManager.AddToRoleAsync(user, "Admin");
             }
         }
+
     }
     catch (Exception ex)
     {

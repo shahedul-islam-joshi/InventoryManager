@@ -11,5 +11,7 @@ namespace InventoryManager.Models.Domain
         public string? Theme { get; set; }
 
         public string? Language { get; set; }
+
+        public virtual ICollection<Inventory> Inventories { get; set; } = new List<Inventory>();
     }
 }
