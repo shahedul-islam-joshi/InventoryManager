@@ -140,6 +140,8 @@ builder.Services.AddScoped<InventoryManager.Services.Interfaces.ICustomIdService
 builder.Services.AddScoped<InventoryManager.Services.Interfaces.ITagService,
                             InventoryManager.Services.TagService>();
 
+// Register DropboxService with HttpClient for support tickets
+builder.Services.AddHttpClient<InventoryManager.Services.DropboxService>();
 
 
 var app = builder.Build();

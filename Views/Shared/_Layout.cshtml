@@ -47,6 +47,111 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <!-- Floating Support Button -->
+        <button type="button" class="btn btn-primary rounded-pill shadow-lg position-fixed" 
+                style="bottom: 20px; right: 20px; z-index: 1050; padding: 10px 20px;" 
+                data-bs-toggle="modal" data-bs-target="#supportTicketModal">
+            🎫 Support
+        </button>
+
+        <!-- Support Ticket Modal -->
+        <div class="modal fade" id="supportTicketModal" tabindex="-1" aria-labelledby="supportTicketModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="supportTicketModalLabel">Submit Support Ticket</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form id="supportTicketForm">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="ticketPriority" class="form-label">Priority</label>
+                                <select class="form-select" id="ticketPriority" name="priority" required>
+                                    <option value="Low">Low</option>
+                                    <option value="Average" selected>Average</option>
+                                    <option value="High">High</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="ticketSummary" class="form-label">Summary</label>
+                                <textarea class="form-control" id="ticketSummary" name="summary" rows="4" required placeholder="Describe your issue..."></textarea>
+                            </div>
+                            <div id="supportStatus" class="mt-2 text-center" style="display:none;"></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary" id="submitTicketBtn">
+                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="submitSpinner"></span>
+                                Submit Ticket
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            document.getElementById('supportTicketForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const form = e.target;
+                const submitBtn = document.getElementById('submitTicketBtn');
+                const spinner = document.getElementById('submitSpinner');
+                const statusDiv = document.getElementById('supportStatus');
+                
+                // Show spinner, disable button
+                submitBtn.disabled = true;
+                spinner.classList.remove('d-none');
+                statusDiv.style.display = 'none';
+
+                const summary = document.getElementById('ticketSummary').value;
+                const priority = document.getElementById('ticketPriority').value;
+                const currentPageLink = window.location.href;
+                let inventoryTitle = null;
+
+                // Try to find inventory title if present on page
+                const inventoryHeader = document.querySelector('h1, h2, .inventory-title');
+                if (inventoryHeader && (window.location.pathname.includes('/Inventory/') || window.location.pathname.includes('/Item/'))) {
+                    inventoryTitle = inventoryHeader.innerText.trim();
+                }
+
+                try {
+                    const response = await fetch('/Support/SubmitTicket', {
+                        method: 'POST',
+                        body: JSON.stringify({ summary, priority, inventoryTitle, currentPageLink }),
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                        }
+                    });
+                    if (response.ok) {
+                        statusDiv.innerText = '✅ Submitted!';
+                        statusDiv.className = 'mt-2 text-center text-success fw-bold';
+                        statusDiv.style.display = 'block';
+                        
+                        setTimeout(() => {
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('supportTicketModal'));
+                            modal.hide();
+                            form.reset();
+                            statusDiv.style.display = 'none';
+                        }, 1500);
+                    } else {
+                        throw new Error('Upload failed');
+                    }
+                } catch (error) {
+                    statusDiv.innerText = '❌ Error';
+                    statusDiv.className = 'mt-2 text-center text-danger fw-bold';
+                    statusDiv.style.display = 'block';
+                } finally {
+                    submitBtn.disabled = false;
+                    spinner.classList.add('d-none');
+                }
+            });
+        </script>
+    }
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
