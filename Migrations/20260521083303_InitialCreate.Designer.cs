@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace InventoryManager.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260218205130_AddDiscussionPosts")]
-    partial class AddDiscussionPosts
+    [Migration("20260521083303_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -127,6 +127,34 @@ namespace InventoryManager.Migrations
                     b.ToTable("DiscussionPosts");
                 });
 
+            modelBuilder.Entity("InventoryManager.Models.Domain.IdElement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Format")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("InventoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InventoryId");
+
+                    b.ToTable("IdElements");
+                });
+
             modelBuilder.Entity("InventoryManager.Models.Domain.Inventory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -144,6 +172,9 @@ namespace InventoryManager.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("text");
+
                     b.Property<bool>("IsPublic")
                         .HasColumnType("boolean");
 
@@ -154,7 +185,14 @@ namespace InventoryManager.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
 
                     b.ToTable("Inventories");
                 });
@@ -177,10 +215,62 @@ namespace InventoryManager.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("InventoryId", "UserId")
-                        .IsUnique();
+                    b.HasIndex("InventoryId");
 
                     b.ToTable("InventoryAccesses");
+                });
+
+            modelBuilder.Entity("InventoryManager.Models.Domain.InventoryField", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FieldType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("InventoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("ShowInTable")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("SlotIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InventoryId");
+
+                    b.ToTable("InventoryFields");
+                });
+
+            modelBuilder.Entity("InventoryManager.Models.Domain.InventoryTag", b =>
+                {
+                    b.Property<Guid>("InventoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("TagId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("InventoryId", "TagId");
+
+                    b.HasIndex("TagId");
+
+                    b.ToTable("InventoryTags");
                 });
 
             modelBuilder.Entity("InventoryManager.Models.Domain.Item", b =>
@@ -189,7 +279,28 @@ namespace InventoryManager.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool?>("Bool1")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("Bool2")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("Bool3")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CustomId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("Date1")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("Date2")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("Date3")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
@@ -203,9 +314,73 @@ namespace InventoryManager.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<decimal?>("Number1")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("Number2")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("Number3")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("Text1")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Text2")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Text3")
+                        .HasColumnType("text");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
+
                     b.HasKey("Id");
 
+                    b.HasIndex("InventoryId");
+
                     b.ToTable("Items");
+                });
+
+            modelBuilder.Entity("InventoryManager.Models.Domain.ItemLike", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ItemLikes");
+                });
+
+            modelBuilder.Entity("InventoryManager.Models.Domain.Tag", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Tags");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -344,6 +519,98 @@ namespace InventoryManager.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("InventoryManager.Models.Domain.IdElement", b =>
+                {
+                    b.HasOne("InventoryManager.Models.Domain.Inventory", "Inventory")
+                        .WithMany("IdElements")
+                        .HasForeignKey("InventoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Inventory");
+                });
+
+            modelBuilder.Entity("InventoryManager.Models.Domain.Inventory", b =>
+                {
+                    b.HasOne("InventoryManager.Models.Domain.ApplicationUser", "Owner")
+                        .WithMany("Inventories")
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("InventoryManager.Models.Domain.InventoryAccess", b =>
+                {
+                    b.HasOne("InventoryManager.Models.Domain.Inventory", "Inventory")
+                        .WithMany("InventoryAccesses")
+                        .HasForeignKey("InventoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Inventory");
+                });
+
+            modelBuilder.Entity("InventoryManager.Models.Domain.InventoryField", b =>
+                {
+                    b.HasOne("InventoryManager.Models.Domain.Inventory", "Inventory")
+                        .WithMany("Fields")
+                        .HasForeignKey("InventoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Inventory");
+                });
+
+            modelBuilder.Entity("InventoryManager.Models.Domain.InventoryTag", b =>
+                {
+                    b.HasOne("InventoryManager.Models.Domain.Inventory", "Inventory")
+                        .WithMany("InventoryTags")
+                        .HasForeignKey("InventoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("InventoryManager.Models.Domain.Tag", "Tag")
+                        .WithMany("InventoryTags")
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Inventory");
+
+                    b.Navigation("Tag");
+                });
+
+            modelBuilder.Entity("InventoryManager.Models.Domain.Item", b =>
+                {
+                    b.HasOne("InventoryManager.Models.Domain.Inventory", "Inventory")
+                        .WithMany("Items")
+                        .HasForeignKey("InventoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Inventory");
+                });
+
+            modelBuilder.Entity("InventoryManager.Models.Domain.ItemLike", b =>
+                {
+                    b.HasOne("InventoryManager.Models.Domain.Item", "Item")
+                        .WithMany("ItemLikes")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("InventoryManager.Models.Domain.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Item");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -393,6 +660,34 @@ namespace InventoryManager.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("InventoryManager.Models.Domain.ApplicationUser", b =>
+                {
+                    b.Navigation("Inventories");
+                });
+
+            modelBuilder.Entity("InventoryManager.Models.Domain.Inventory", b =>
+                {
+                    b.Navigation("Fields");
+
+                    b.Navigation("IdElements");
+
+                    b.Navigation("InventoryAccesses");
+
+                    b.Navigation("InventoryTags");
+
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("InventoryManager.Models.Domain.Item", b =>
+                {
+                    b.Navigation("ItemLikes");
+                });
+
+            modelBuilder.Entity("InventoryManager.Models.Domain.Tag", b =>
+                {
+                    b.Navigation("InventoryTags");
                 });
 #pragma warning restore 612, 618
         }
